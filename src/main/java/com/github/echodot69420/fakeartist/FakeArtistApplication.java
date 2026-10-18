@@ -158,7 +158,16 @@ class GameController {
         for (int attempt = 0; attempt < 1000; attempt++) { StringBuilder code = new StringBuilder(4); for (int i = 0; i < 4; i++) code.append(CODE_ALPHABET.charAt(ThreadLocalRandom.current().nextInt(CODE_ALPHABET.length()))); if (!games.containsKey(code.toString())) return code.toString(); }
         throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "No game codes available right now.");
     }
-    private String cleanUsername(String value) { String username = value == null ? "" : value.trim(); if (username.length() < 2) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Username must be at least 2 characters."); return username; }
+    private String cleanUsername(String value) {
+    String username = value == null ? "" : value.trim();
+    if (username.length() < 1) {
+        throw new ApiException(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Username must be 1-16 alphanumeric characters.");
+    }
+    return username;
+}
+
     private String cleanTheme(String value) { String theme = value == null ? "" : value.trim(); if (theme.isEmpty() || theme.length() > 20) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Theme must be 1-20 characters."); return theme; }
     private String cleanCode(String value) { String code = value == null ? "" : value.trim().toUpperCase(); if (!code.matches("[A-Z0-9]{4}")) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Game code must be 4 characters."); return code; }
     private Map<String, Object> itemMap(int id, Item item) { return Map.of("id", id, "name", item.name(), "price", item.price(), "in_stock", item.in_stock()); }

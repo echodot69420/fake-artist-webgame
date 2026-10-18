@@ -156,10 +156,10 @@ class GameControllerUnitTests {
 
     @Test
     void hostRejectsUsernameShorterThanMinimum() {
-        // Boundary Value Analysis: one character is below the two-character username minimum.
-        assertThatThrownBy(() -> controller.host(new HostRequest("A", "Space")))
+        // Boundary Value Analysis: one character is below the one-character username minimum.
+        assertThatThrownBy(() -> controller.host(new HostRequest("", "Space")))
                 .isInstanceOf(ApiException.class)
-                .hasMessage("Username must be at least 2 characters.")
+                .hasMessage("Username must be 1-16 alphanumeric characters.")
                 .extracting(exception -> ((ApiException) exception).status)
                 .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }

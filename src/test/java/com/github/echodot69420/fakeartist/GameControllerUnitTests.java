@@ -163,4 +163,14 @@ class GameControllerUnitTests {
                 .extracting(exception -> ((ApiException) exception).status)
                 .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
+    @Test
+    void hostAcceptsOneCharacterUsername() {
+        Map<String, Object> response =
+            controller.host(new HostRequest("A", "Space"));
+
+        assertThat(controller.getGame((String) response.get("code")).players)
+                .singleElement()
+                .satisfies(player -> assertThat(player.username()).isEqualTo("A"));
+    }
+
 }

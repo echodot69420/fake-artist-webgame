@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lobby — Fake Artist Goes to New York</title>
+<meta name="description" content="Game lobby: share your code and wait for players.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14110e;
+    --paper: #f6f1e6;
+    --card: #fffdf8;
+    --line: #ded5c4;
+    --red: #ef4444;
+    --blue: #2563eb;
+    --yellow: #ffd93d;
+    --green: #16a34a;
+    --muted: #6f6759;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(rgba(20, 17, 14, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 17, 14, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .blob {
+    position: fixed;
+    border-radius: 50% 45% 55% 50%;
+    filter: blur(2px);
+    opacity: 0.16;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 320px; height: 300px; background: var(--red); top: -80px; right: -60px; transform: rotate(20deg); }
+  .blob-2 { width: 240px; height: 230px; background: var(--blue); bottom: -70px; left: -50px; transform: rotate(-15deg); }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+    display: grid;
+    place-items: center;
+    font-family: "Caveat", cursive;
+    font-size: 1.3rem;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* --- connection pill --- */
+  .conn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 7px 13px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+  }
+  .conn .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .conn[data-state="connected"] .dot { background: var(--green); animation: pulse 1.6s ease-in-out infinite; }
+  .conn[data-state="checking"] .dot { background: var(--yellow); animation: pulse 0.8s ease-in-out infinite; }
+  .conn[data-state="disconnected"] .dot { background: var(--red); }
+  .conn[data-state="disconnected"] { background: #fee2e2; }
+
+  @keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.15); } }
+
+  main { flex: 1; padding: 44px 0 24px; }
+
+  .card {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 10px 10px 0 var(--ink);
+  }
+  .card h1 {
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .sub { margin: 0 0 24px; font-size: 0.92rem; color: var(--muted); line-height: 1.55; }
+
+  .code-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .code-label.spaced { margin-top: 22px; }
+  .theme-value {
+    margin: 0;
+    font-family: Caveat, "Comic Sans MS", cursive;
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: 700;
+    color: var(--blue);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .code-display { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .code-value {
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: clamp(2rem, 7vw, 3rem);
+    letter-spacing: 0.2em;
+    padding: 10px 18px;
+    background: var(--yellow);
+    border: 2px dashed var(--ink);
+    border-radius: var(--radius);
+    user-select: all;
+  }
+
+  .btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 20px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.5); outline-offset: 3px; }
+  .btn-primary { background: var(--yellow); }
+  .btn-danger { background: #fee2e2; }
+  .btn-ghost { box-shadow: none; border-color: var(--line); font-size: 0.88rem; padding: 10px 15px; }
+  .btn-ghost:hover { box-shadow: none; transform: none; border-color: var(--ink); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 26px 0 20px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 14px);
+  }
+
+  .players {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    min-height: 40px;
+  }
+  .players li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: #fff;
+    animation: pop 0.22s ease-out;
+  }
+  .players li.you { background: #dbeafe; }
+  .players li.host::after {
+    content: "host";
+    font-family: Caveat, cursive;
+    font-size: 0.95rem;
+    color: var(--blue);
+  }
+  @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .waiting {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 14px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sweep-note {
+    margin: 22px 0 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: var(--paper);
+    border: 2px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    line-height: 1.5;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+
+  .banner {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 2px solid var(--red);
+    border-radius: var(--radius);
+    background: #fee2e2;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .banner[hidden] { display: none; }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 2px dashed var(--line);
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 22px; box-shadow: 6px 6px 0 var(--ink); }
+    .actions .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="page">
+  <header>
+    <a class="logo" href="/">
+      <span class="logo-mark">FA</span>
+      <span>Fake Artist Goes to New York</span>
+    </a>
+    <span class="conn" id="conn" data-state="connecting" role="status" aria-live="polite">
+      <span class="dot"></span>
+      <span id="conn-text">Connecting…</span>
+    </span>
+  </header>
+
+  <main>
+    <section class="card" aria-label="Game lobby">
+      <h1 id="lobby-heading">Lobby</h1>
+      <p class="sub" id="lobby-sub">Share this code so others can join your table.</p>
+
+      <p class="code-label">Theme</p>
+      <p class="theme-value" id="theme-value">—</p>
+
+      <p class="code-label spaced">Game code</p>
+      <div class="code-display">
+        <span class="code-value" id="code-value">----</span>
+        <button class="btn btn-ghost" id="copy-btn" type="button">Copy</button>
+      </div>
+
+      <div class="divider"><span>Players</span></div>
+      <ul class="players" id="player-list"></ul>
+      <p class="waiting" id="waiting-msg"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block"></span> Waiting for players to join…</p>
+
+      <p class="sweep-note">
+        This page holds a live connection to the server. It pings every few seconds
+        and the server checks every <strong>15 seconds</strong> that everyone is still
+        there — anyone silent for that long gets disconnected.
+        <span id="sweep-status"></span>
+      </p>
+
+      <div class="banner" id="banner" hidden></div>
+
+      <div class="actions">
+        <button class="btn btn-danger" id="leave-btn" type="button">Leave game</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Fake Artist Goes to New York — a work in progress.</span>
+    <span id="you-are"></span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  const HEARTBEAT_MS = 5000;      // client ping period
+  const SERVER_CHECK_S = 15;      // server's liveness sweep, shown in the UI
+  const CLIENT_TIMEOUT_MS = (SERVER_CHECK_S + 5) * 1000; // no reply => dropped
+
+  const els = {
+    conn: $("conn"),
+    connText: $("conn-text"),
+    heading: $("lobby-heading"),
+    sub: $("lobby-sub"),
+    code: $("code-value"),
+    theme: $("theme-value"),
+    copy: $("copy-btn"),
+    list: $("player-list"),
+    waiting: $("waiting-msg"),
+    banner: $("banner"),
+    sweep: $("sweep-status"),
+    leave: $("leave-btn"),
+    youAre: $("you-are"),
+  };
+
+  // The homepage stores this after /host or /connect succeeds.
+  let session = null;
+  try { session = JSON.parse(sessionStorage.getItem("fakeArtistSession")); } catch { /* ignore */ }
+
+  if (!session || !session.code || !session.player_id) {
+    els.banner.hidden = false;
+    els.banner.textContent = "You're not in a game yet — host or join one from the homepage.";
+    els.leave.textContent = "Back to homepage";
+    els.leave.dataset.mode = "home";
+  }
+
+  els.code.textContent = session?.code || "----";
+  els.theme.textContent = session?.theme || "—";
+  els.youAre.textContent = session ? `Playing as ${session.username}` : "";
+
+  let socket = null;
+  let heartbeatTimer = null;
+  let watchdogTimer = null;
+  let intentionalClose = false;
+  let lastMessageAt = 0;
+
+  function setConn(state, text) {
+    els.conn.dataset.state = state;
+    els.connText.textContent = text;
+  }
+
+  function showBanner(message) {
+    els.banner.hidden = false;
+    els.banner.textContent = message;
+  }
+
+  function renderPlayers(game) {
+    if (game.theme) els.theme.textContent = game.theme;
+    els.list.innerHTML = "";
+    const players = game.players || [];
+    players.forEach((p) => {
+      const li = document.createElement("li");
+      li.textContent = p.username + (p.player_id === session?.player_id ? " (you)" : "");
+      if (p.player_id === session?.player_id) li.classList.add("you");
+      if (p.is_host) li.classList.add("host");
+      els.list.appendChild(li);
+    });
+    els.waiting.hidden = players.length > 1;
+    if (game.started) {
+      els.heading.textContent = "Game in progress";
+      els.sub.textContent = "The round has started — good luck.";
+    }
+  }
+
+  function connect() {
+    if (!session) return;
+
+    intentionalClose = false;
+    setConn("connecting", "Connecting…");
+
+    const scheme = location.protocol === "https:" ? "wss" : "ws";
+    const url = `${scheme}://${location.host}/ws/lobby` +
+      `?code=${encodeURIComponent(session.code)}` +
+      `&player_id=${encodeURIComponent(session.player_id)}`;
+
+    socket = new WebSocket(url);
+
+    socket.addEventListener("open", () => {
+      setConn("connected", "Connected");
+      els.sweep.textContent = ` Next server check in ~${SERVER_CHECK_S}s.`;
+      send({ type: "ping" });
+      startHeartbeat();
+      startWatchdog();
+    });
+
+    socket.addEventListener("message", (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+      lastMessageAt = Date.now();
+
+      if (msg.type === "players") {
+        renderPlayers(msg);
+      } else if (msg.type === "pong") {
+        setConn("connected", "Connected");
+      } else if (msg.type === "bye") {
+        intentionalClose = true;
+        setConn("disconnected", "Disconnected");
+        stopTimers();
+        const left = msg.game_exists ? " The game is still running." : "";
+        showBanner(`Disconnected by the server: ${msg.reason}.${left}`);
+        els.leave.textContent = msg.game_exists ? "Rejoin" : "Back to homepage";
+        els.leave.dataset.mode = msg.game_exists ? "rejoin" : "home";
+      } else if (msg.type === "error") {
+        showBanner(msg.detail);
+      }
+    });
+
+    socket.addEventListener("close", () => {
+      stopTimers();
+      if (intentionalClose) return;
+      setConn("disconnected", "Disconnected");
+      showBanner("Lost connection to the server. You were removed from the lobby.");
+      els.leave.textContent = "Try to rejoin";
+      els.leave.dataset.mode = "rejoin";
+    });
+
+    socket.addEventListener("error", () => {
+      setConn("disconnected", "Connection error");
+    });
+  }
+
+  function send(payload) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(payload));
+    }
+  }
+
+  function startHeartbeat() {
+    stopTimers(true);
+    heartbeatTimer = setInterval(() => {
+      // Hidden tabs get throttled timers, so tell the server to relax.
+      send({ type: document.hidden ? "away" : "ping" });
+    }, HEARTBEAT_MS);
+  }
+
+  function startWatchdog() {
+    lastMessageAt = Date.now();
+    watchdogTimer = setInterval(() => {
+      if (Date.now() - lastMessageAt > CLIENT_TIMEOUT_MS) {
+        setConn("checking", "No reply…");
+        intentionalClose = false;
+        socket.close();
+      }
+    }, 5000);
+  }
+
+  function stopTimers(keepHeartbeat = false) {
+    if (!keepHeartbeat && heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; }
+  }
+
+  // Leaving: close first so the server does the removal, then go home.
+  async function leave() {
+    const mode = els.leave.dataset.mode || "leave";
+
+    if (mode === "rejoin") {
+      els.banner.hidden = true;
+      els.leave.textContent = "Leave game";
+      els.leave.dataset.mode = "leave";
+      connect();
+      return;
+    }
+
+    intentionalClose = true;
+    if (mode !== "home" && session) {
+      send({ type: "quit" });
+      try {
+        await fetch("/quit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: session.code, player_id: session.player_id }),
+        });
+      } catch { /* server already gone */ }
+      sessionStorage.removeItem("fakeArtistSession");
+    }
+    location.href = "/";
+  }
+
+  els.leave.addEventListener("click", leave);
+
+  els.copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(els.code.textContent);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(els.code);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    els.copy.textContent = "Copied!";
+    setTimeout(() => { els.copy.textContent = "Copy"; }, 1600);
+  });
+
+  // Closing the tab removes you via the socket dropping; tell the server too.
+  window.addEventListener("pagehide", () => send({ type: "quit" }));
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) send({ type: "ping" });
+  });
+
+  connect();
+})();
+</script>
+</body>
+</html>

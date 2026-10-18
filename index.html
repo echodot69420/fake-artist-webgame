@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fake Artist Goes to New York</title>
+<meta name="description" content="Everyone draws. One of them is faking it. A party drawing game for 3-10 players.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14110e;
+    --paper: #f6f1e6;
+    --card: #fffdf8;
+    --line: #ded5c4;
+    --red: #ef4444;
+    --blue: #2563eb;
+    --yellow: #ffd93d;
+    --muted: #6f6759;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(rgba(20, 17, 14, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 17, 14, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+    overflow-x: hidden;
+  }
+
+  /* --- decorative paint blobs --- */
+  .blob {
+    position: fixed;
+    border-radius: 50% 45% 55% 50%;
+    filter: blur(2px);
+    opacity: 0.16;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 320px; height: 300px; background: var(--red); top: -80px; right: -60px; transform: rotate(20deg); }
+  .blob-2 { width: 240px; height: 230px; background: var(--blue); bottom: -70px; left: -50px; transform: rotate(-15deg); }
+  .blob-3 { width: 140px; height: 130px; background: var(--yellow); top: 45%; left: 6%; opacity: 0.35; }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* --- header --- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+  }
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+    display: grid;
+    place-items: center;
+    font-family: "Caveat", cursive;
+    font-size: 1.3rem;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+  }
+
+  /* --- hero --- */
+  .hero {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 56px;
+    align-items: center;
+    padding: 48px 0 24px;
+  }
+
+  h1 {
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    margin: 0 0 20px;
+  }
+  h1 .underlined {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+  }
+  h1 .underlined::after {
+    content: "";
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    bottom: -0.16em;
+    height: 0.26em;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 20' preserveAspectRatio='none'%3E%3Cpath d='M5 13 C 45 3, 72 18, 104 9 S 162 3, 195 12' fill='none' stroke='%23ef4444' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+  h1 .city {
+    font-family: Caveat, "Comic Sans MS", cursive;
+    text-transform: none;
+    color: var(--blue);
+    font-size: 1.05em;
+    letter-spacing: 0;
+  }
+
+  .tagline {
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 46ch;
+    margin: 0 0 24px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .meta li {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* --- card / form --- */
+  .card {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 10px 10px 0 var(--ink);
+  }
+
+  .card h2 {
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+  }
+  .card .sub {
+    margin: 0 0 22px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  input {
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    padding: 14px 16px;
+    border: 2px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--ink);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input::placeholder { color: #b3aa9a; }
+  input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
+  }
+  input.invalid {
+    border-color: var(--red);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+  }
+
+  .field-error {
+    min-height: 1.15em;
+    margin: 6px 0 0;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--red);
+  }
+  .label-optional {
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .field { margin-bottom: 6px; }
+
+  .btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    cursor: pointer;
+    box-shadow: 5px 5px 0 var(--ink);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s;
+  }
+  .btn:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+  .btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+  .btn:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.5); outline-offset: 3px; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: 3px 3px 0 var(--ink); }
+
+  .btn-primary { background: var(--yellow); color: var(--ink); }
+  .btn-secondary { background: var(--blue); color: #fff; }
+  .btn-ghost {
+    background: transparent;
+    box-shadow: none;
+    border-color: var(--line);
+    font-size: 0.9rem;
+    padding: 11px 16px;
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--paper); box-shadow: none; transform: none; border-color: var(--ink); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 22px 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 14px);
+  }
+
+  .join-row {
+    display: flex;
+    gap: 10px;
+  }
+  .join-row input {
+    flex: 1;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    font-weight: 700;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    padding-left: 12px; /* balances the letter-spacing push */
+  }
+  .join-row .btn { width: auto; flex-shrink: 0; padding-inline: 26px; }
+
+  .hint {
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* --- lobby view --- */
+  .lobby-title {
+    font-family: Caveat, cursive;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--blue);
+    margin: 0 0 6px;
+  }
+  .code-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 18px 0 8px;
+  }
+  .code-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .code-value {
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    letter-spacing: 0.18em;
+    padding: 10px 16px;
+    background: var(--yellow);
+    border: 2px dashed var(--ink);
+    border-radius: var(--radius);
+    user-select: all;
+  }
+  .players {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .players li {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 7px 13px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: #fff;
+  }
+  .players li.you { background: #dbeafe; }
+  .waiting {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 14px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+
+  .status {
+    min-height: 1.2em;
+    margin: 16px 0 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--blue);
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 2px dashed var(--line);
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: 36px; padding-top: 32px; }
+    .blob-3 { display: none; }
+  }
+  @media (max-width: 480px) {
+    .card { padding: 22px; box-shadow: 6px 6px 0 var(--ink); }
+    .join-row { flex-direction: column; }
+    .join-row .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="page">
+  <header>
+    <div class="logo">
+      <span class="logo-mark">FA</span>
+      <span>Fake Artist Goes to New York</span>
+    </div>
+    <span class="badge">Party drawing game</span>
+  </header>
+
+  <main class="hero">
+    <section class="hero-copy">
+      <h1>
+        Fake <span class="underlined">Artist</span><br>
+        goes to <span class="city">New York</span>
+      </h1>
+      <p class="tagline">
+        Everyone gets the same secret topic — except one player, who is faking it.
+        Take turns adding a single line to the shared drawing, ask clever questions,
+        and unmask the impostor before the picture is finished.
+      </p>
+      <ul class="meta">
+        <li>3–10 players</li>
+        <li>~15 minutes</li>
+        <li>Ages 8+</li>
+        <li>No art skill required</li>
+      </ul>
+    </section>
+
+    <section class="card" aria-label="Game lobby">
+      <!-- Home view -->
+      <div id="home-view">
+        <h2>Start playing</h2>
+        <p class="sub">Host a new table or join your friends with a code.</p>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" type="text" placeholder="e.g. DoodleBug" maxlength="16"
+                 autocomplete="nickname" spellcheck="false" aria-describedby="username-error">
+          <p class="field-error" id="username-error" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label for="theme">Theme <span class="label-optional">1–20 characters</span></label>
+          <input id="theme" type="text" placeholder="e.g. Times Square" maxlength="20"
+                 autocomplete="off" spellcheck="false" aria-describedby="theme-error">
+          <p class="field-error" id="theme-error" role="alert"></p>
+        </div>
+
+        <button id="host-btn" class="btn btn-primary" type="button">✦ Host a game</button>
+
+        <div class="divider"><span>or join a friend</span></div>
+
+        <div class="field">
+          <label for="game-code">Game code</label>
+          <div class="join-row">
+            <input id="game-code" type="text" inputmode="latin" placeholder="ABCD" maxlength="4"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false"
+                   aria-describedby="code-error">
+            <button id="join-btn" class="btn btn-secondary" type="button">Join</button>
+          </div>
+          <p class="field-error" id="code-error" role="alert"></p>
+        </div>
+
+        <p class="hint">Ask the host for the 4-letter code.</p>
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer>
+    <span>Fake Artist Goes to New York — a work in progress.</span>
+    <span>Draw one line. Tell the truth (or don't).</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    username: $("username"),
+    usernameError: $("username-error"),
+    theme: $("theme"),
+    themeError: $("theme-error"),
+    code: $("game-code"),
+    codeError: $("code-error"),
+    hostBtn: $("host-btn"),
+    joinBtn: $("join-btn"),
+    status: $("status"),
+  };
+
+  // Talks to the FastAPI backend in main.py.
+  async function api(path, body) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail = typeof data.detail === "string"
+        ? data.detail
+        : "Something went wrong. Please try again.";
+      throw new Error(detail);
+    }
+    return data;
+  }
+
+  // Remember who we are so /lobby can open its WebSocket as this player.
+  function saveSession(game, username) {
+    const me = game.players.find((p) => p.username === username) || game.players[0];
+    sessionStorage.setItem("fakeArtistSession", JSON.stringify({
+      code: game.code,
+      player_id: me.player_id,
+      username: me.username,
+      theme: game.theme,
+    }));
+    location.href = "/lobby";
+  }
+
+  function setError(input, errorEl, message) {
+    errorEl.textContent = message;
+    input.classList.toggle("invalid", Boolean(message));
+    if (message) input.focus();
+  }
+
+  function validateUsername() {
+    const name = els.username.value.trim();
+    if (!name) return setError(els.username, els.usernameError, "Please enter a username."), null;
+    if (name.length < 2) return setError(els.username, els.usernameError, "Use at least 2 characters."), null;
+    setError(els.username, els.usernameError, "");
+    return name;
+  }
+
+  function validateTheme() {
+    const theme = els.theme.value.trim();
+    if (!theme) return setError(els.theme, els.themeError, "Please enter a theme."), null;
+    if (theme.length > 20) return setError(els.theme, els.themeError, "Themes are at most 20 characters."), null;
+    setError(els.theme, els.themeError, "");
+    return theme;
+  }
+
+  function validateCode() {
+    const raw = els.code.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!raw) return setError(els.code, els.codeError, "Enter the 4-letter game code."), null;
+    if (raw.length !== 4) return setError(els.code, els.codeError, "Codes are exactly 4 characters."), null;
+    setError(els.code, els.codeError, "");
+    return raw;
+  }
+
+  function setLoading(btn, loading, loadingLabel) {
+    if (loading) {
+      btn.dataset.label = btn.textContent;
+      btn.textContent = loadingLabel;
+      btn.disabled = true;
+    } else {
+      btn.textContent = btn.dataset.label || btn.textContent;
+      btn.disabled = false;
+    }
+  }
+
+  async function hostGame() {
+    const username = validateUsername();
+    if (!username) return;
+    const theme = validateTheme();
+    if (!theme) return;
+
+    setLoading(els.hostBtn, true, "Creating table…");
+    els.status.textContent = "";
+    try {
+      const game = await api("/host", { username, theme });
+      saveSession(game, username);
+    } catch (err) {
+      els.status.textContent = err.message || "Couldn't create a table. Please try again.";
+      setLoading(els.hostBtn, false);
+    }
+  }
+
+  async function joinGame() {
+    const username = validateUsername();
+    if (!username) return;
+    const code = validateCode();
+    if (!code) return;
+
+    setLoading(els.joinBtn, true, "Joining…");
+    els.status.textContent = "";
+    try {
+      const game = await api("/connect", { username, code });
+      saveSession(game, username);
+    } catch (err) {
+      els.status.textContent = err.message || "That game code doesn't exist (or the table is full).";
+      setError(els.code, els.codeError, "Couldn't join with that code.");
+      setLoading(els.joinBtn, false);
+    }
+  }
+
+  // Uppercase / strip the code field as the player types.
+  els.code.addEventListener("input", () => {
+    const clean = els.code.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    if (els.code.value !== clean) els.code.value = clean;
+    if (els.codeError.textContent) setError(els.code, els.codeError, "");
+  });
+
+  els.username.addEventListener("input", () => {
+    if (els.usernameError.textContent) setError(els.username, els.usernameError, "");
+  });
+
+  els.theme.addEventListener("input", () => {
+    // Keep spaces out of the ends while typing so the 20-char cap is usable.
+    if (els.theme.value !== els.theme.value.trimStart()) els.theme.value = els.theme.value.trimStart();
+    if (els.themeError.textContent) setError(els.theme, els.themeError, "");
+  });
+
+  els.hostBtn.addEventListener("click", hostGame);
+  els.joinBtn.addEventListener("click", joinGame);
+
+  els.theme.addEventListener("keydown", (e) => { if (e.key === "Enter") hostGame(); });
+  els.code.addEventListener("keydown", (e) => { if (e.key === "Enter") joinGame(); });
+  els.username.addEventListener("keydown", (e) => { if (e.key === "Enter") hostGame(); });
+})();
+</script>
+</body>
+</html>

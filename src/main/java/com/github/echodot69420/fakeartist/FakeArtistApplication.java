@@ -159,14 +159,15 @@ class GameController {
         throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "No game codes available right now.");
     }
     private String cleanUsername(String value) {
-        String username = value == null ? "" : value.trim();
-        if (!username.matches("[A-Za-z0-9]{1,16}")) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Username must be 1-16 alphanumeric characters.");
-        }
-        return username;
+    String username = value == null ? "" : value;
+    if (!username.matches("[A-Za-z0-9]{1,16}")) {
+        throw new ApiException(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Username must be 1-16 alphanumeric characters.");
     }
+    return username;
+}
+
 
 
     private String cleanTheme(String value) { String theme = value == null ? "" : value.trim(); if (theme.isEmpty() || theme.length() > 20) throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Theme must be 1-20 characters."); return theme; }

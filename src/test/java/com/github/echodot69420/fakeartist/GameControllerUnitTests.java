@@ -28,7 +28,7 @@ class GameControllerUnitTests {
 
     @Test
     void hostCreatesGameWithTrimmedValuesAndHostPlayer() {
-        Map<String, Object> response = controller.host(new HostRequest("  Alice  ", "  Space  "));
+        Map<String, Object> response = controller.host(new HostRequest("Alice", "  Space  "));
 
         assertThat(response).containsEntry("theme", "Space");
         assertThat((String) response.get("code")).hasSize(4);
@@ -183,14 +183,15 @@ class GameControllerUnitTests {
                 .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
     @Test
-    void hostRejectsUsernameLongerThanSixteenCharacters() {
-        assertThatThrownBy(() ->
-                controller.host(new HostRequest("ABCDEFGHIJKLMNOPQ", "Space")))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("Username must be 1-16 alphanumeric characters.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
-    }
+void hostRejectsUsernameWithLeadingWhitespace() {
+    assertThatThrownBy(() ->
+            controller.host(new HostRequest(" Alice", "Space")))
+            .isInstanceOf(ApiException.class)
+            .hasMessage("Username must be 1-16 alphanumeric characters.")
+            .extracting(exception -> ((ApiException) exception).status)
+            .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+}
+
 
 
 

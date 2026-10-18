@@ -181,7 +181,17 @@ class GameControllerUnitTests {
                 .hasMessage("Username must be 1-16 alphanumeric characters.")
                 .extracting(exception -> ((ApiException) exception).status)
                 .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
-}
+    }
+    @Test
+    void hostRejectsUsernameLongerThanSixteenCharacters() {
+        assertThatThrownBy(() ->
+                controller.host(new HostRequest("ABCDEFGHIJKLMNOPQ", "Space")))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("Username must be 1-16 alphanumeric characters.")
+                .extracting(exception -> ((ApiException) exception).status)
+                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
 
 
 }

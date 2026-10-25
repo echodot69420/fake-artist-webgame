@@ -101,7 +101,7 @@ The homepage stores the session (`code`, `player_id`, `username`, `theme`) in
 | GET    | `/health`       | —                                       | `{"status": "ok", ...}`     |
 | GET    | `/models`       | —                                       | Empty OpenAI-style model list |
 
-- **Username:** 2–16 characters, unique per game.
+- **Username:** 1–16 alphanumeric characters, unique per game.
 - **Theme:** 1–20 characters, chosen by the host.
 - **Code:** 4 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`
   (no `I`, `O`, `0`, `1`), case-insensitive on connect.

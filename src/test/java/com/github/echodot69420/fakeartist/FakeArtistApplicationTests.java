@@ -62,6 +62,47 @@ class FakeArtistApplicationTests {
     }
 
     @Test
+    void hostEndpointCreatesGameForValidInput() {
+        ResponseEntity<Map> response = post("/host", Map.of(
+                "username", "HostPlayer",
+                "theme", "Space"
+        ));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsEntry("theme", "Space");
+        assertThat((String) response.getBody().get("code")).hasSize(4);
+
+        List<Map<String, Object>> players = (List<Map<String, Object>>) response.getBody().get("players");
+        assertThat(players).hasSize(1);
+        assertThat(players.get(0))
+                .containsEntry("username", "HostPlayer")
+                .containsEntry("is_host", true);
+    }
+
+    // Performance threshold: 20/20 valid `/host` requests must return HTTP 200 in under 500 ms each on the test environment.
+    @Test
+    void hostEndpointRespondsWithinPerformanceThreshold() {
+        post("/host", Map.of(
+                "username", "Warmup",
+                "theme", "Space"
+        ));
+
+        for (int i = 0; i < 20; i++) {
+            long start = System.nanoTime();
+            ResponseEntity<Map> response = post("/host", Map.of(
+                    "username", "PerfUser" + i,
+                    "theme", "Space"
+            ));
+            long elapsedNanos = System.nanoTime() - start;
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(elapsedNanos)
+                    .as("request %d response time", i + 1)
+                    .isLessThan(500_000_000L);
+        }
+    }
+
+    @Test
     void duplicateUsernameIsRejectedWhenJoiningGame() {
         ResponseEntity<Map> hostResponse = post("/host", Map.of(
                 "username", "HostUser",

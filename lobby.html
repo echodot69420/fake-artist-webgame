@@ -182,6 +182,7 @@
   .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
   .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
   .btn:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.5); outline-offset: 3px; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: 3px 3px 0 var(--ink); }
   .btn-primary { background: var(--yellow); }
   .btn-danger { background: #fee2e2; }
   .btn-ghost { box-shadow: none; border-color: var(--line); font-size: 0.88rem; padding: 10px 15px; }
@@ -261,6 +262,36 @@
     flex-wrap: wrap;
     margin-top: 22px;
   }
+  .tooltip-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+  .tooltip-wrap[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: calc(100% + 9px);
+    width: max-content;
+    max-width: 260px;
+    padding: 8px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--card);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+  .tooltip-wrap[data-tooltip]:hover::after,
+  .tooltip-wrap[data-tooltip]:focus-within::after {
+    opacity: 1;
+  }
 
   .banner {
     margin-top: 20px;
@@ -336,6 +367,9 @@
       <div class="banner" id="banner" hidden></div>
 
       <div class="actions">
+        <span class="tooltip-wrap" id="start-btn-wrap">
+          <button class="btn btn-primary" id="start-btn" type="button" disabled>Start game</button>
+        </span>
         <button class="btn btn-danger" id="leave-btn" type="button">Leave game</button>
       </div>
     </section>
@@ -369,6 +403,8 @@
     waiting: $("waiting-msg"),
     banner: $("banner"),
     sweep: $("sweep-status"),
+    start: $("start-btn"),
+    startWrap: $("start-btn-wrap"),
     leave: $("leave-btn"),
     youAre: $("you-are"),
   };
@@ -404,6 +440,28 @@
     els.banner.textContent = message;
   }
 
+  function updateStartButton(game = {}) {
+    const players = game.players || [];
+    const me = players.find((p) => p.player_id === session?.player_id);
+    const isHost = Boolean(me?.is_host);
+    const needsPlayers = isHost && players.length < 3;
+    const disabled = !isHost || needsPlayers || game.started;
+    const tooltip = !isHost
+      ? "Only host can start the game"
+      : needsPlayers
+        ? "Need 3+ players to start the game."
+        : "";
+
+    els.start.disabled = disabled;
+    if (tooltip) {
+      els.startWrap.dataset.tooltip = tooltip;
+      els.startWrap.setAttribute("aria-label", tooltip);
+    } else {
+      delete els.startWrap.dataset.tooltip;
+      els.startWrap.removeAttribute("aria-label");
+    }
+  }
+
   function renderPlayers(game) {
     if (game.theme) els.theme.textContent = game.theme;
     els.list.innerHTML = "";
@@ -416,10 +474,15 @@
       els.list.appendChild(li);
     });
     els.waiting.hidden = players.length > 1;
+    updateStartButton(game);
     if (game.started) {
       els.heading.textContent = "Game in progress";
       els.sub.textContent = "The round has started — good luck.";
     }
+  }
+
+  function startGame() {
+    if (!els.start.disabled) send({ type: "start" });
   }
 
   function connect() {
@@ -537,6 +600,7 @@
   }
 
   els.leave.addEventListener("click", leave);
+  els.start.addEventListener("click", startGame);
 
   els.copy.addEventListener("click", async () => {
     try {

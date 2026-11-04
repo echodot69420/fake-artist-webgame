@@ -200,7 +200,10 @@ class LobbyHandler extends TextWebSocketHandler {
         JsonNode node; try { node = mapper.readTree(message.getPayload()); } catch (Exception e) { send(session, Map.of("type", "error", "detail", "expected JSON")); return; }
         String type = node.path("type").asText();
         if ("ping".equals(type)) { away.put(key, false); send(session, Map.of("type", "pong", "at", System.currentTimeMillis() / 1000.0)); }
-        else if ("away".equals(type)) away.put(key, true); else if ("quit".equals(type)) drop(code, playerId, "quit"); else send(session, Map.of("type", "error", "detail", "unknown message type: " + type));
+        else if ("away".equals(type)) away.put(key, true);
+        else if ("quit".equals(type)) drop(code, playerId, "quit");
+        else if ("start".equals(type)) startGame(code, playerId, session);
+        else send(session, Map.of("type", "error", "detail", "unknown message type: " + type));
     }
 
     @Override public void afterConnectionClosed(WebSocketSession session, CloseStatus status) { drop(queryValue(session, "code").toUpperCase(), queryValue(session, "player_id"), "disconnected"); }
@@ -210,6 +213,15 @@ class LobbyHandler extends TextWebSocketHandler {
     void broadcastPlayers(String code) {
         Game game = controller.getGameIfPresent(code); Map<String, Object> payload = new LinkedHashMap<>(); payload.put("type", "players"); payload.put("code", code); payload.put("theme", game == null ? "" : game.theme); payload.put("game_exists", game != null); payload.put("players", game == null ? List.of() : List.copyOf(game.players)); payload.put("started", game != null && game.started);
         connections.getOrDefault(code, Map.of()).values().forEach(session -> send(session, payload));
+    }
+
+    private synchronized void startGame(String code, String playerId, WebSocketSession session) {
+        Game game = controller.getGameIfPresent(code);
+        if (game == null) { send(session, Map.of("type", "error", "detail", "Game not found.")); return; }
+        GamePlayer player = game.players.stream().filter(p -> p.player_id().equals(playerId)).findFirst().orElse(null);
+        if (player == null || !player.is_host()) { send(session, Map.of("type", "error", "detail", "Only the host can start the game.")); return; }
+        if (game.players.size() < 3) { send(session, Map.of("type", "error", "detail", "Need 3+ players to start the game.")); return; }
+        if (!game.started) { game.started = true; broadcastPlayers(code); }
     }
 
     private void drop(String code, String playerId, String reason) {

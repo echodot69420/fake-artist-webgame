@@ -58,7 +58,6 @@ The existing work should be credited and connected to the final report:
 | FR-08 | Players can leave a game. | A quit action removes the player, transfers host status when necessary, and deletes an empty game. | Implemented |
 | FR-09 | Inactive connections are removed. | Active tabs time out after the documented heartbeat interval; hidden tabs receive the longer away timeout. | Implemented |
 | FR-10 | The application exposes a health endpoint. | `GET /health` returns HTTP 200 and reports service, game count, and player count. | Implemented |
-| FR-11 | The application provides basic item CRUD endpoints. | The documented item endpoints create, list, retrieve, and delete items with appropriate success and not-found responses. | Legacy/demo feature; document whether retained |
 | FR-12 | Users receive understandable validation and connection errors. | Invalid usernames, themes, codes, missing games, full games, and unauthorized start attempts produce visible or API-readable errors. | Partially implemented; verify UI coverage |
 
 ### Non-functional requirements
@@ -86,10 +85,7 @@ These are suitable for the requirements-divergence section of the report:
    leading whitespace.
 3. Game state is in memory rather than persistent. This is appropriate for a
    course-sized prototype but means games disappear when the server restarts.
-4. The repository still contains the original item CRUD demo endpoints. Decide
-   whether they are part of the final product, explicitly legacy, or candidates
-   for removal.
-5. The current implementation is a lobby and start-flow foundation rather than
+4. The current implementation is a lobby and start-flow foundation rather than
    a complete drawing round. The report should state the actual scope instead of
    implying features that are not implemented.
 
@@ -125,7 +121,6 @@ these more precise tasks for remaining work.
 |---|---|---|
 | P1 | Add WebSocket disconnect integration tests | Tests cover quit, close, timeout, host transfer, and broadcast behavior. |
 | P1 | Verify responsive and keyboard-accessible UI | Test at narrow and wide viewport sizes, document results, and fix any blocking issues. |
-| P1 | Clarify or remove legacy item endpoints | README and final requirements identify their purpose; unrelated demo behavior does not confuse the product scope. |
 | P1 | Document configuration management | Explain port overrides, local versus production assumptions, and secret handling. |
 | P2 | Add a Maven Wrapper | A reviewer can run the build without manually installing a matching Maven version. |
 | P2 | Clean tracked build output | Remove any already-tracked generated files under `target/` and verify `.gitignore` prevents recurrence. |

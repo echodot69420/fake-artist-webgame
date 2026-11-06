@@ -3,8 +3,6 @@ package com.github.echodot69420.fakeartist;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-record Item(String name, double price, boolean in_stock) {}
-
 record HostRequest(
         @Size(min = 1, max = 16) @Pattern(regexp = "[A-Za-z0-9]+") String username,
         @Size(min = 1, max = 20) String theme) {}

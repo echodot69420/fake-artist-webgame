@@ -50,7 +50,6 @@ code changes.
 
 ```bash
 curl http://127.0.0.1:8000/health   # should return {"status":"ok",...}
-curl http://127.0.0.1:8000/items     # should return []
 ```
 
 Or open the interactive API docs at <http://127.0.0.1:8000/docs>.
@@ -119,11 +118,6 @@ an empty list so nothing gets registered).
 
 Those probe requests are answered normally by Spring Boot, so nothing needs to
 be registered in the model picker.
-
-### Demo endpoints
-
-The item CRUD demo from the original simple server is still there:
-`GET /items`, `GET /items/{id}`, `POST /items`, `DELETE /items/{id}`.
 
 ## WebSocket: `/ws/lobby`
 

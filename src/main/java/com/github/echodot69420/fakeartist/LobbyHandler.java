@@ -22,13 +22,15 @@ import java.util.concurrent.ThreadLocalRandom;
 class LobbyHandler extends TextWebSocketHandler {
     private final ObjectMapper mapper;
     private final GameController controller;
+    private final FeatureFlags featureFlags;
     private final Map<String, Map<String, WebSocketSession>> connections = new ConcurrentHashMap<>();
     private final Map<String, Long> lastSeen = new ConcurrentHashMap<>();
     private final Map<String, Boolean> away = new ConcurrentHashMap<>();
 
-    LobbyHandler(ObjectMapper mapper, GameController controller) {
+    LobbyHandler(ObjectMapper mapper, GameController controller, FeatureFlags featureFlags) {
         this.mapper = mapper;
         this.controller = controller;
+        this.featureFlags = featureFlags;
     }
 
     @Override
@@ -184,6 +186,9 @@ class LobbyHandler extends TextWebSocketHandler {
             WebSocketSession session = gameConnections.get(player.player_id());
             if (session != null) {
                 send(session, Map.of("type", "player_popup", "message", message));
+                if (featureFlags.roundResults()) {
+                    send(session, Map.of("type", "round_results", "message", message));
+                }
             }
         });
     }

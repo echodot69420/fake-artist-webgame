@@ -24,6 +24,14 @@ class FakeArtistApplicationTests {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private FeatureFlags featureFlags;
+
+    @Test
+    void roundResultsFeatureIsDisabledByDefault() {
+        assertThat(featureFlags.roundResults()).isFalse();
+    }
+
     @Test
     void healthEndpointReturnsApplicationStatus() {
         ResponseEntity<Map> response = restTemplate.getForEntity(baseUrl("/health"), Map.class);

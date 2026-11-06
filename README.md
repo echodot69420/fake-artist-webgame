@@ -164,3 +164,17 @@ lobby.html      Lobby page (live connection + player list)
 ```
 
 All state is in memory — games reset when the server restarts.
+
+## Feature flags
+
+Experimental features are disabled by default so incomplete work can be merged
+without changing the normal game flow. The current flag is
+`fakeartist.features.round-results=false` in
+`src/main/resources/application.properties`.
+
+To enable it for a local run without editing or committing configuration, pass
+the property on the command line:
+
+```bash
+java -jar target/fake-artist-1.0.0.jar --fakeartist.features.round-results=true
+```

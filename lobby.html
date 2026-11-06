@@ -598,7 +598,12 @@
       if (p.is_host) li.classList.add("host");
       els.list.appendChild(li);
     });
-    els.waiting.hidden = players.length > 1;
+    const playersNeeded = 3 - players.length;
+    els.waiting.hidden = playersNeeded <= 0;
+    if (playersNeeded > 0) {
+      els.waiting.lastChild.textContent =
+        ` Waiting for ${playersNeeded} more player${playersNeeded === 1 ? "" : "s"} to join…`;
+    }
     updateStartButton(game);
     if (game.collecting_topics) topicPhase = true;
     if (game.started) {

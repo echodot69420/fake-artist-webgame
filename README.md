@@ -16,11 +16,13 @@ mvn test
 
 ## Continuous integration workflow
 
-GitHub Actions runs `mvn --batch-mode test` for every push. Keep changes
-small enough to review and verify independently: run the tests locally, make
-one focused commit, push it, and confirm the corresponding workflow run is
-green before starting the next change. This keeps incomplete work safe to
-integrate when it is protected by a disabled feature flag.
+GitHub Actions runs `mvn --batch-mode test` for every push on both Java 17 and
+Java 21. Java 17 is the project baseline, while Java 21 checks compatibility
+with a newer LTS runtime. Keep changes small enough to review and verify
+independently: run the tests locally, make one focused commit, push it, and
+confirm both matrix legs are green before starting the next change. This keeps
+incomplete work safe to integrate when it is protected by a disabled feature
+flag.
 
 1. **Get the code** (skip if you already have it):
 

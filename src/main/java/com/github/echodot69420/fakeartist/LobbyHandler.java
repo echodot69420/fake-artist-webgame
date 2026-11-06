@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 class LobbyHandler extends TextWebSocketHandler {
@@ -162,9 +163,29 @@ class LobbyHandler extends TextWebSocketHandler {
         broadcastTopicProgress(code, game);
         if (game.players.stream().allMatch(player -> game.topics.containsKey(player.player_id()))) {
             game.collectingTopics = false;
+            sendTopicResultsAndRoleToPlayers(code, game);
             game.started = true;
             broadcastPlayers(code);
         }
+    }
+
+    private void sendTopicResultsAndRoleToPlayers(String code, Game game) {
+        Map<String, WebSocketSession> gameConnections = connections.getOrDefault(code, Map.of());
+        int fakeArtistIndex = ThreadLocalRandom.current().nextInt(game.players.size());
+        GamePlayer fakeArtist = game.players.get(fakeArtistIndex);
+        int selectedTopicIndex = ThreadLocalRandom.current().nextInt(game.players.size() - 1);
+        if (selectedTopicIndex >= fakeArtistIndex) selectedTopicIndex++;
+        String selectedTopic = game.topics.get(game.players.get(selectedTopicIndex).player_id());
+
+        game.players.forEach(player -> {
+            String message = player.player_id().equals(fakeArtist.player_id())
+                    ? "You are the fake artist"
+                    : "The chosen topic is: " + selectedTopic;
+            WebSocketSession session = gameConnections.get(player.player_id());
+            if (session != null) {
+                send(session, Map.of("type", "player_popup", "message", message));
+            }
+        });
     }
 
     private void broadcastTopicPrompt(String code, Game game) {

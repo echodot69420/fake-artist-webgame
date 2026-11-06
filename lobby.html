@@ -366,6 +366,26 @@
     font-size: 0.82rem;
     text-align: center;
   }
+  .message-modal {
+    width: min(100%, 440px);
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 10px 10px 0 var(--ink);
+  }
+  .message-modal h2 {
+    margin: 0 0 12px;
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: 1.45rem;
+    text-transform: uppercase;
+  }
+  .message-modal p {
+    margin: 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .message-modal .btn { margin-top: 20px; width: 100%; }
 
   footer {
     margin-top: 32px;
@@ -454,6 +474,14 @@
     <p class="topic-status" id="topic-status" aria-live="polite"></p>
   </form>
 </div>
+<div class="modal-backdrop" id="message-modal-backdrop" hidden>
+  <section class="message-modal" role="dialog" aria-modal="true"
+           aria-labelledby="message-modal-title">
+    <h2 id="message-modal-title">Message for you</h2>
+    <p id="message-modal-text"></p>
+    <button class="btn btn-primary" id="message-modal-close" type="button">Continue</button>
+  </section>
+</div>
 
 <script>
 (() => {
@@ -487,6 +515,9 @@
     topicInput: $("topic-input"),
     topicSubmit: $("topic-submit"),
     topicStatus: $("topic-status"),
+    messageBackdrop: $("message-modal-backdrop"),
+    messageText: $("message-modal-text"),
+    messageClose: $("message-modal-close"),
   };
 
   // The homepage stores this after /host or /connect succeeds.
@@ -544,6 +575,16 @@
       delete els.startWrap.dataset.tooltip;
       els.startWrap.removeAttribute("aria-label");
     }
+  }
+
+  function showPlayerPopup(message) {
+    els.messageText.textContent = message;
+    els.messageBackdrop.hidden = false;
+    els.messageClose.focus();
+  }
+
+  function closePlayerPopup() {
+    els.messageBackdrop.hidden = true;
   }
 
   function renderPlayers(game) {
@@ -629,6 +670,8 @@
         openTopicModal(msg.theme, msg.submitted);
       } else if (msg.type === "topic_progress") {
         updateTopicProgress(msg.submitted, msg.total);
+      } else if (msg.type === "player_popup") {
+        showPlayerPopup(msg.message);
       } else if (msg.type === "pong") {
         setConn("connected", "Connected");
       } else if (msg.type === "bye") {
@@ -738,6 +781,7 @@
     els.topicStatus.textContent = "Your topic is in. Waiting for the other players…";
     send({ type: "topic", value: topic });
   });
+  els.messageClose.addEventListener("click", closePlayerPopup);
 
   els.copy.addEventListener("click", async () => {
     try {

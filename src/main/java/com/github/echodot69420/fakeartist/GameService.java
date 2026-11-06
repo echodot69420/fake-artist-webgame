@@ -29,7 +29,7 @@ class GameService {
     synchronized Map<String, Object> connect(ConnectRequest request) {
         Game game = getGame(cleanCode(request.code()));
         String username = cleanUsername(request.username());
-        if (game.started) throw new ApiException(HttpStatus.CONFLICT, "Game already started.");
+        if (game.started || game.collectingTopics) throw new ApiException(HttpStatus.CONFLICT, "Game already started.");
         if (game.players.size() >= 10) throw new ApiException(HttpStatus.CONFLICT, "Game is full.");
         if (game.players.stream().anyMatch(player -> player.username().equalsIgnoreCase(username))) {
             throw new ApiException(HttpStatus.CONFLICT, "That username is taken in this game.");

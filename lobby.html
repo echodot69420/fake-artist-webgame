@@ -305,6 +305,68 @@
   }
   .banner[hidden] { display: none; }
 
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(20, 17, 14, 0.62);
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .topic-modal {
+    width: min(100%, 440px);
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 10px 10px 0 var(--ink);
+  }
+  .topic-modal h2 {
+    margin: 0 0 8px;
+    font-family: "Archivo Black", Impact, sans-serif;
+    font-size: 1.45rem;
+    text-transform: uppercase;
+  }
+  .topic-modal p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .topic-theme {
+    color: var(--blue);
+    font-family: Caveat, cursive;
+    font-size: 1.45rem;
+    font-weight: 700;
+  }
+  .topic-modal label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .topic-modal input {
+    width: 100%;
+    padding: 12px 13px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+  }
+  .topic-modal input:focus { outline: 3px solid rgba(37, 99, 235, 0.35); }
+  .topic-modal .btn { margin-top: 16px; width: 100%; }
+  .topic-status {
+    min-height: 1.4em;
+    margin: 14px 0 0 !important;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
   footer {
     margin-top: 32px;
     padding-top: 18px;
@@ -381,6 +443,18 @@
   </footer>
 </div>
 
+<div class="modal-backdrop" id="topic-modal-backdrop" hidden>
+  <form class="topic-modal" id="topic-form">
+    <h2>Pick your topic</h2>
+    <p>Choose something related to the theme: <span class="topic-theme" id="topic-theme"></span></p>
+    <label for="topic-input">Your topic</label>
+    <input id="topic-input" name="topic" type="text" maxlength="40"
+           autocomplete="off" required>
+    <button class="btn btn-primary" id="topic-submit" type="submit">Submit topic</button>
+    <p class="topic-status" id="topic-status" aria-live="polite"></p>
+  </form>
+</div>
+
 <script>
 (() => {
   "use strict";
@@ -407,6 +481,12 @@
     startWrap: $("start-btn-wrap"),
     leave: $("leave-btn"),
     youAre: $("you-are"),
+    topicBackdrop: $("topic-modal-backdrop"),
+    topicForm: $("topic-form"),
+    topicTheme: $("topic-theme"),
+    topicInput: $("topic-input"),
+    topicSubmit: $("topic-submit"),
+    topicStatus: $("topic-status"),
   };
 
   // The homepage stores this after /host or /connect succeeds.
@@ -429,6 +509,8 @@
   let watchdogTimer = null;
   let intentionalClose = false;
   let lastMessageAt = 0;
+  let topicSubmitted = false;
+  let topicPhase = false;
 
   function setConn(state, text) {
     els.conn.dataset.state = state;
@@ -445,11 +527,13 @@
     const me = players.find((p) => p.player_id === session?.player_id);
     const isHost = Boolean(me?.is_host);
     const needsPlayers = isHost && players.length < 3;
-    const disabled = !isHost || needsPlayers || game.started;
+    const disabled = !isHost || needsPlayers || game.started || game.collecting_topics;
     const tooltip = !isHost
       ? "Only host can start the game"
       : needsPlayers
         ? "Need 3+ players to start the game."
+        : game.collecting_topics
+          ? "Waiting for everyone to choose a topic."
         : "";
 
     els.start.disabled = disabled;
@@ -475,9 +559,37 @@
     });
     els.waiting.hidden = players.length > 1;
     updateStartButton(game);
+    if (game.collecting_topics) topicPhase = true;
     if (game.started) {
       els.heading.textContent = "Game in progress";
       els.sub.textContent = "The round has started — good luck.";
+      closeTopicModal();
+    }
+  }
+
+  function openTopicModal(theme, submitted = false) {
+    topicPhase = true;
+    topicSubmitted = submitted;
+    els.topicTheme.textContent = theme;
+    els.topicBackdrop.hidden = false;
+    els.topicInput.disabled = submitted;
+    els.topicSubmit.disabled = submitted;
+    els.topicStatus.textContent = submitted
+      ? "Your topic is in. Waiting for the other players…"
+      : "Everyone must submit a topic before the round begins.";
+    if (!submitted) els.topicInput.focus();
+  }
+
+  function closeTopicModal() {
+    topicPhase = false;
+    els.topicBackdrop.hidden = true;
+  }
+
+  function updateTopicProgress(submitted, total) {
+    if (topicPhase) {
+      els.topicStatus.textContent = topicSubmitted
+        ? `Your topic is in. ${submitted} of ${total} players have answered.`
+        : `${submitted} of ${total} players have answered.`;
     }
   }
 
@@ -513,6 +625,10 @@
 
       if (msg.type === "players") {
         renderPlayers(msg);
+      } else if (msg.type === "topic_prompt") {
+        openTopicModal(msg.theme, msg.submitted);
+      } else if (msg.type === "topic_progress") {
+        updateTopicProgress(msg.submitted, msg.total);
       } else if (msg.type === "pong") {
         setConn("connected", "Connected");
       } else if (msg.type === "bye") {
@@ -524,6 +640,13 @@
         els.leave.textContent = msg.game_exists ? "Rejoin" : "Back to homepage";
         els.leave.dataset.mode = msg.game_exists ? "rejoin" : "home";
       } else if (msg.type === "error") {
+        if (topicSubmitted && topicPhase) {
+          topicSubmitted = false;
+          els.topicInput.disabled = false;
+          els.topicSubmit.disabled = false;
+          els.topicStatus.textContent = msg.detail;
+          els.topicInput.focus();
+        }
         showBanner(msg.detail);
       }
     });
@@ -601,6 +724,20 @@
 
   els.leave.addEventListener("click", leave);
   els.start.addEventListener("click", startGame);
+  els.topicForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const topic = els.topicInput.value.trim();
+    if (!topic) {
+      els.topicStatus.textContent = "Enter a topic before submitting.";
+      els.topicInput.focus();
+      return;
+    }
+    topicSubmitted = true;
+    els.topicInput.disabled = true;
+    els.topicSubmit.disabled = true;
+    els.topicStatus.textContent = "Your topic is in. Waiting for the other players…";
+    send({ type: "topic", value: topic });
+  });
 
   els.copy.addEventListener("click", async () => {
     try {

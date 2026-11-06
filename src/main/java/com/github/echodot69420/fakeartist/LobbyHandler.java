@@ -47,6 +47,11 @@ class LobbyHandler extends TextWebSocketHandler {
         lastSeen.put(key(code, playerId), System.currentTimeMillis());
         away.put(key(code, playerId), false);
         broadcastPlayers(code);
+        if (game.collectingTopics) {
+            send(session, Map.of("type", "topic_prompt", "theme", game.theme,
+                    "submitted", game.topics.containsKey(playerId), "total", game.players.size()));
+            broadcastTopicProgress(code, game);
+        }
     }
 
     @Override
@@ -72,6 +77,8 @@ class LobbyHandler extends TextWebSocketHandler {
             drop(code, playerId, "quit");
         } else if ("start".equals(type)) {
             startGame(code, playerId, session);
+        } else if ("topic".equals(type)) {
+            submitTopic(code, playerId, session, node.path("value").asText());
         } else {
             send(session, Map.of("type", "error", "detail", "unknown message type: " + type));
         }
@@ -101,6 +108,7 @@ class LobbyHandler extends TextWebSocketHandler {
         payload.put("game_exists", game != null);
         payload.put("players", game == null ? List.of() : List.copyOf(game.players));
         payload.put("started", game != null && game.started);
+        payload.put("collecting_topics", game != null && game.collectingTopics);
         connections.getOrDefault(code, Map.of()).values().forEach(session -> send(session, payload));
     }
 
@@ -123,9 +131,58 @@ class LobbyHandler extends TextWebSocketHandler {
             return;
         }
         if (!game.started) {
+            if (!game.collectingTopics) {
+                game.collectingTopics = true;
+                broadcastPlayers(code);
+                broadcastTopicPrompt(code, game);
+            }
+        }
+    }
+
+    private synchronized void submitTopic(String code, String playerId, WebSocketSession session, String value) {
+        Game game = controller.getGameIfPresent(code);
+        if (game == null) {
+            send(session, Map.of("type", "error", "detail", "Game not found."));
+            return;
+        }
+        if (!game.collectingTopics || game.started) {
+            send(session, Map.of("type", "error", "detail", "The topic selection window is closed."));
+            return;
+        }
+        if (game.players.stream().noneMatch(player -> player.player_id().equals(playerId))) {
+            send(session, Map.of("type", "error", "detail", "Player is not in this game."));
+            return;
+        }
+        String topic = value == null ? "" : value.trim();
+        if (topic.isEmpty() || topic.length() > 40) {
+            send(session, Map.of("type", "error", "detail", "Topic must be 1-40 characters."));
+            return;
+        }
+        game.topics.put(playerId, topic);
+        broadcastTopicProgress(code, game);
+        if (game.players.stream().allMatch(player -> game.topics.containsKey(player.player_id()))) {
+            game.collectingTopics = false;
             game.started = true;
             broadcastPlayers(code);
         }
+    }
+
+    private void broadcastTopicPrompt(String code, Game game) {
+        connections.getOrDefault(code, Map.of()).forEach((playerId, session) -> {
+            send(session, Map.of("type", "topic_prompt", "theme", game.theme,
+                    "submitted", game.topics.containsKey(playerId),
+                    "total", game.players.size()));
+        });
+        broadcastTopicProgress(code, game);
+    }
+
+    private void broadcastTopicProgress(String code, Game game) {
+        long submitted = game.players.stream()
+                .filter(player -> game.topics.containsKey(player.player_id()))
+                .count();
+        connections.getOrDefault(code, Map.of()).values().forEach(session ->
+                send(session, Map.of("type", "topic_progress", "submitted", submitted,
+                        "total", game.players.size())));
     }
 
     private void drop(String code, String playerId, String reason) {
@@ -141,6 +198,13 @@ class LobbyHandler extends TextWebSocketHandler {
                 // The player may already have left through the HTTP endpoint.
             }
         }
+        if (game != null && game.collectingTopics) {
+            game.topics.remove(playerId);
+            if (game.players.stream().allMatch(player -> game.topics.containsKey(player.player_id()))) {
+                game.collectingTopics = false;
+                game.started = true;
+            }
+        }
         Game remaining = controller.getGameIfPresent(code);
         send(session, Map.of("type", "bye", "reason", reason, "game_exists", remaining != null));
         try {
@@ -149,6 +213,7 @@ class LobbyHandler extends TextWebSocketHandler {
             // The session is already being closed.
         }
         broadcastPlayers(code);
+        if (remaining != null && remaining.collectingTopics) broadcastTopicProgress(code, remaining);
     }
 
     private void closeWithBye(WebSocketSession session, String reason, boolean gameExists) throws IOException {

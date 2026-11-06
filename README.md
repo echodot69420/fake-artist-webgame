@@ -132,8 +132,11 @@ ws://127.0.0.1:8000/ws/lobby?code=ABCD&player_id=...
 | client → server | `{"type": "ping"}` — heartbeat            |
 | client → server | `{"type": "away"}` — tab hidden, relaxed timeout |
 | client → server | `{"type": "quit"}` — leave the game      |
-| client → server | `{"type": "start"}` — host starts the game (requires 3+ players) |
+| client → server | `{"type": "start"}` — host opens topic selection (requires 3+ players) |
+| client → server | `{"type": "topic", "value": "..."}` — player submits a topic |
 | server → client | `{"type": "players", code, theme, players, started, game_exists}"` |
+| server → client | `{"type": "topic_prompt", "theme", "submitted", "total"}` — opens topic selection |
+| server → client | `{"type": "topic_progress", "submitted", "total"}` — topic response count |
 | server → client | `{"type": "pong"}` — heartbeat reply     |
 | server → client | `{"type": "bye", "reason", "game_exists"}` — being disconnected |
 

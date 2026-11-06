@@ -14,6 +14,14 @@ To run the automated checks for the game logic and API endpoints:
 mvn test
 ```
 
+## Continuous integration workflow
+
+GitHub Actions runs `mvn --batch-mode test` for every push. Keep changes
+small enough to review and verify independently: run the tests locally, make
+one focused commit, push it, and confirm the corresponding workflow run is
+green before starting the next change. This keeps incomplete work safe to
+integrate when it is protected by a disabled feature flag.
+
 1. **Get the code** (skip if you already have it):
 
    ```bash

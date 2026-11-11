@@ -173,6 +173,8 @@ index.html      Homepage (host/join form with theme field)
 lobby.html      Lobby page (live connection + player list)
 ```
 
+[Project requirements](requirements.md)
+
 All state is in memory — games reset when the server restarts.
 
 ## Feature flags

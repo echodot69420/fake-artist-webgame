@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "fakeartist.features")
 class FeatureFlags {
     private boolean roundResults;
+    private boolean kickPlayer;
 
     boolean roundResults() {
         return roundResults;
@@ -14,5 +15,13 @@ class FeatureFlags {
 
     void setRoundResults(boolean roundResults) {
         this.roundResults = roundResults;
+    }
+
+    boolean kickPlayer() {
+        return kickPlayer;
+    }
+
+    void setKickPlayer(boolean kickPlayer) {
+        this.kickPlayer = kickPlayer;
     }
 }

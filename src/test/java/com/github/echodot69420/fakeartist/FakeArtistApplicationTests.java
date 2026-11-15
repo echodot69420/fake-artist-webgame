@@ -33,6 +33,11 @@ class FakeArtistApplicationTests {
     }
 
     @Test
+    void kickPlayerFeatureIsDisabledByDefault() {
+        assertThat(featureFlags.kickPlayer()).isFalse();
+    }
+
+    @Test
     void healthEndpointReturnsApplicationStatus() {
         ResponseEntity<Map> response = restTemplate.getForEntity(baseUrl("/health"), Map.class);
 

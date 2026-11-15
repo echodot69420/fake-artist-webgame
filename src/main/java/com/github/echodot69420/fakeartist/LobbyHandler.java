@@ -82,6 +82,8 @@ class LobbyHandler extends TextWebSocketHandler {
             startGame(code, playerId, session);
         } else if ("topic".equals(type)) {
             submitTopic(code, playerId, session, node.path("value").asText());
+        } else if ("kick".equals(type)) {
+            kickPlayer(code, playerId, session, node.path("player_id").asText());
         } else {
             send(session, Map.of("type", "error", "detail", "unknown message type: " + type));
         }
@@ -112,7 +114,43 @@ class LobbyHandler extends TextWebSocketHandler {
         payload.put("players", game == null ? List.of() : List.copyOf(game.players));
         payload.put("started", game != null && game.started);
         payload.put("collecting_topics", game != null && game.collectingTopics);
+        payload.put("kick_enabled", featureFlags.kickPlayer());
         connections.getOrDefault(code, Map.of()).values().forEach(session -> send(session, payload));
+    }
+
+    private synchronized void kickPlayer(String code, String playerId, WebSocketSession session, String targetId) {
+        if (!featureFlags.kickPlayer()) {
+            send(session, Map.of("type", "error", "detail", "Player kicking is disabled."));
+            return;
+        }
+        Game game = controller.getGameIfPresent(code);
+        if (game == null) {
+            send(session, Map.of("type", "error", "detail", "Game not found."));
+            return;
+        }
+        GamePlayer requester = game.players.stream()
+                .filter(player -> player.player_id().equals(playerId))
+                .findFirst()
+                .orElse(null);
+        if (requester == null || !requester.is_host()) {
+            send(session, Map.of("type", "error", "detail", "Only the host can kick players."));
+            return;
+        }
+        GamePlayer target = game.players.stream()
+                .filter(player -> player.player_id().equals(targetId))
+                .findFirst()
+                .orElse(null);
+        if (target == null || target.is_host() || target.player_id().equals(playerId)) {
+            send(session, Map.of("type", "error", "detail", "Only a non-host player can be kicked."));
+            return;
+        }
+        if (connections.getOrDefault(code, Map.of()).containsKey(targetId)) {
+            drop(code, targetId, "kicked by host");
+            return;
+        }
+        game.topics.remove(targetId);
+        controller.removePlayer(game, targetId);
+        broadcastPlayers(code);
     }
 
     private synchronized void startGame(String code, String playerId, WebSocketSession session) {

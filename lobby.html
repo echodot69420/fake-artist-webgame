@@ -348,6 +348,11 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
+  .kick-btn {
+    margin-left: 8px;
+    padding: 5px 9px;
+    font-size: 0.75rem;
+  }
   .topic-modal input {
     width: 100%;
     padding: 12px 13px;
@@ -591,11 +596,22 @@
     if (game.theme) els.theme.textContent = game.theme;
     els.list.innerHTML = "";
     const players = game.players || [];
+    const me = players.find((p) => p.player_id === session?.player_id);
     players.forEach((p) => {
       const li = document.createElement("li");
       li.textContent = p.username + (p.player_id === session?.player_id ? " (you)" : "");
       if (p.player_id === session?.player_id) li.classList.add("you");
       if (p.is_host) li.classList.add("host");
+      if (game.kick_enabled && me?.is_host && !game.started && !game.collecting_topics
+          && !p.is_host && p.player_id !== session?.player_id) {
+        const kick = document.createElement("button");
+        kick.className = "btn btn-ghost kick-btn";
+        kick.type = "button";
+        kick.textContent = "Kick";
+        kick.setAttribute("aria-label", `Kick ${p.username}`);
+        kick.addEventListener("click", () => send({ type: "kick", player_id: p.player_id }));
+        li.appendChild(kick);
+      }
       els.list.appendChild(li);
     });
     const playersNeeded = 3 - players.length;

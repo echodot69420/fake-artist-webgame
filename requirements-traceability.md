@@ -2,7 +2,28 @@
 
 Scope: every requirement marked **Implemented** in `requirements.md` (FR-01 – FR-15, NFR-01, NFR-05, NFR-06, NFR-07).
 Tests are listed as `TestClass.testMethod`; use your editor's symbol search to jump to one.
-Each test also carries `@Tag` annotations for its requirement IDs (sub-requirement and parent, e.g. `FR-01-01` and `FR-01`), or `NON-REQ`.
+
+## Test naming scheme
+
+**Class names** say what is tested and how it runs:
+
+| Suffix | Meaning | Runs with | Example |
+| --- | --- | --- | --- |
+| `*Test` | Unit test: plain JUnit with mocks, no Spring context, milliseconds per test | `mvn test` (Surefire) | `LobbyHandlerKickTest` |
+| `*IT` | Integration test: starts the Spring application (and a browser for `*PageIT`) | `mvn verify` (Failsafe) | `GameApiErrorIT` |
+
+- Unit test classes are named `<ClassUnderTest><Feature>Test` and live in the same package as the class they test, e.g. `LobbyHandlerTopicTest` tests `LobbyHandler`'s topic handling and `errors/ErrorCodeTest` tests `errors/ErrorCode`.
+- Integration test classes are named after the surface they exercise: `GameApi*IT` for the HTTP API, `*PageIT` for a web page in a real browser, `FeatureFlagsIT` for configuration binding, `*PerformanceIT` for timing checks.
+- Helpers that are not tests (`LobbyFixture`, `BrowserTestBase`) have no `Test`/`IT` suffix, so neither plugin runs them.
+
+**Method names** state the behaviour being checked as a sentence, `<situation><expected outcome>`: e.g. `eleventhPlayerIsRejected`, `takenUsernameShowsErrorUnderUsername`. Boundary tests name the value at the boundary (`themeLength20IsAccepted`, `themeLength21IsRejected`).
+
+**Tags** link each test to requirements:
+
+- `@Tag("FR-01-01")` for every sub-requirement the test verifies, plus `@Tag("FR-01")` for its parent, so `-Dgroups=FR-01` selects the whole family.
+- `@Tag("NON-REQ")` when the test maps to no requirement (e.g. the experimental round-results flag).
+- Category tags: `browser` (Playwright tests) and `performance` (timing tests), which can be skipped with `-DexcludedGroups=browser` or `-DexcludedGroups=performance`.
+
 Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
 
 

@@ -59,7 +59,7 @@
 | FR-12-04 | The server shall remove a silent active connection after more than 15 seconds. | The scheduled liveness check shall remove an active connection that exceeds the active timeout. | Implemented |
 | FR-12-05 | The server shall remove a silent away connection after more than 120 seconds. | The scheduled liveness check shall remove an away connection that exceeds the away timeout. | Implemented |
 | FR-13 | The lobby shall provide game-code sharing. | The lobby shall provide a copy-to-clipboard control and shall provide visible confirmation after a successful copy operation. | Implemented |
-| FR-14 | The system shall provide actionable error feedback. | The system shall provide a visible UI message or API error for an invalid code, missing game, full game, started game, unauthorized start, invalid topic, invalid input, or connection failure. | Partially implemented; UI coverage shall be expanded |
+| FR-14 | The system shall provide actionable error feedback. | The system shall provide a visible UI message or API error for an invalid code, missing game, full game, started game, unauthorized start, invalid topic, invalid input, or connection failure. | Implemented; verified by the FR-14 tests in section 3 |
 | FR-15 | The service shall provide operational endpoints. | `GET /health` shall return HTTP 200 with status, service name, game count, and player count. `GET /models` shall return an empty model list for local tooling compatibility. | Implemented |
 | FR-16 | The system shall allow the host to remove a player from the lobby. | The kick flow shall satisfy FR-16-01 through FR-16-05. | Planned |
 | FR-16-01 | The lobby shall display kick controls only to the current host. | A non-host client shall not receive an enabled kick control. | Planned |
@@ -86,3 +86,30 @@
 | NFR-12 | The application shall provide operational observability. | The server shall log startup failures, validation failures, game lifecycle events, WebSocket cleanup events, and unexpected errors without logging credentials, player identifiers, or complete submitted topics. | Partially implemented; logging requirements shall be verified |
 | NFR-13 | The project shall separate environment configuration from source code. | Port, feature flags, and environment-specific settings shall be overrideable through documented configuration or command-line properties; secrets shall not be committed. | Partially implemented; configuration documentation shall be expanded |
 | NFR-14 | The project shall maintain testable and maintainable code. | Each changed behavior shall have an automated test where practical; public HTTP and WebSocket contracts shall be documented; generated build output shall remain untracked. | Partially implemented; disconnect and kick tests remain |
+
+## 3. FR-14 error feedback traceability
+
+Every error is defined once in `ErrorCode` and reaches clients as `{"code", "detail"}` over HTTP (`RestErrorHandler`) or as `{"type": "error", "code", "detail"}` over WebSocket (`WebSocketErrorHandler`).
+
+| FR-14 case | Error code(s) | Transport | Tests |
+| --- | --- | --- | --- |
+| Invalid code | `INVALID_CODE` | HTTP 422 | R-C1, R-C2, R-C3, R-C4 |
+| Missing game | `GAME_NOT_FOUND` | HTTP 404 | R-C5 |
+| Full game | `GAME_FULL` | HTTP 409 | R-S1, R-S2 |
+| Started game | `GAME_STARTED` | HTTP 409 | R-S4 |
+| Unauthorized start | `NOT_HOST`, `NOT_ENOUGH_PLAYERS` | WebSocket | L-S1, L-S2, L-S3 |
+| Invalid topic | `INVALID_TOPIC`, `TOPIC_WINDOW_CLOSED` | WebSocket | L-T1 to L-T6 |
+| Invalid input | `INVALID_USERNAME`, `INVALID_THEME`, `USERNAME_TAKEN`, `MALFORMED_REQUEST`, `UNKNOWN_MESSAGE_TYPE` | HTTP 422/409/400, WebSocket | R-U1 to R-U6, R-T1 to R-T5, R-S3, R-P1 to R-P3, L-P1 to L-P3 |
+| Connection failure | client-side network and socket handling | Browser | Manual (homepage with server stopped; lobby "Couldn't connect" and "Lost connection" banners) |
+| Kick rejection (FR-16-02, FR-16-03) | `FEATURE_DISABLED`, `NOT_HOST`, `INVALID_KICK_TARGET` | WebSocket | L-K1 to L-K4 |
+| Unexpected server error | `INTERNAL`, `RESOURCE_NOT_FOUND` | HTTP 500/404, WebSocket | R-P4, R-P5, W-4, W-5 |
+
+Supporting tests:
+
+| Requirement | Tests | Test class |
+| --- | --- | --- |
+| FR-14, NFR-14 (error contract) | E-1 to E-3, W-9 | `errors.ErrorCodeTests`, `errors.WebSocketErrorHandlerTests` |
+| NFR-07 (errors never drop the connection) | W-5 to W-8, L-P1, L-P4 | `errors.WebSocketErrorHandlerTests`, `LobbyHandlerErrorTests` |
+| NFR-12 (error logging without player data) | R-L1, R-L2, R-L3, W-4 | `RestErrorHandlerTests`, `errors.RestErrorHandlerUnexpectedErrorTests`, `errors.WebSocketErrorHandlerTests` |
+
+Test IDs prefixed R- are in `RestErrorHandlerTests` (R-P5 and R-L3 in `errors.RestErrorHandlerUnexpectedErrorTests`), W- in `errors.WebSocketErrorHandlerTests`, L- in `LobbyHandlerErrorTests` and E- in `errors.ErrorCodeTests`.

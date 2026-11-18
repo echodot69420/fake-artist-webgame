@@ -561,19 +561,27 @@
     status: $("status"),
   };
 
-  // Talks to the FastAPI backend in main.py.
+  // Talks to the Spring backend. Errors arrive as {code, detail}; see ErrorCode.java.
   async function api(path, body) {
-    const res = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let res;
+    try {
+      res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      const err = new Error("Can't reach the server. Check your connection and try again.");
+      err.code = "NETWORK";
+      throw err;
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const detail = typeof data.detail === "string"
+      const err = new Error(typeof data.detail === "string"
         ? data.detail
-        : "Something went wrong. Please try again.";
-      throw new Error(detail);
+        : "Something went wrong. Please try again.");
+      err.code = typeof data.code === "string" ? data.code : "INTERNAL";
+      throw err;
     }
     return data;
   }
@@ -599,7 +607,9 @@
   function validateUsername() {
     const name = els.username.value.trim();
     if (!name) return setError(els.username, els.usernameError, "Please enter a username."), null;
-    if (name.length < 2) return setError(els.username, els.usernameError, "Use at least 2 characters."), null;
+    if (!/^[A-Za-z0-9]{1,16}$/.test(name)) {
+      return setError(els.username, els.usernameError, "Use 1-16 letters or numbers."), null;
+    }
     setError(els.username, els.usernameError, "");
     return name;
   }
@@ -644,6 +654,8 @@
       saveSession(game, username);
     } catch (err) {
       els.status.textContent = err.message || "Couldn't create a table. Please try again.";
+      if (err.code === "INVALID_USERNAME") setError(els.username, els.usernameError, err.message);
+      else if (err.code === "INVALID_THEME") setError(els.theme, els.themeError, err.message);
       setLoading(els.hostBtn, false);
     }
   }
@@ -660,8 +672,12 @@
       const game = await api("/connect", { username, code });
       saveSession(game, username);
     } catch (err) {
-      els.status.textContent = err.message || "That game code doesn't exist (or the table is full).";
-      setError(els.code, els.codeError, "Couldn't join with that code.");
+      els.status.textContent = err.message || "Couldn't join that game. Please try again.";
+      if (err.code === "USERNAME_TAKEN" || err.code === "INVALID_USERNAME") {
+        setError(els.username, els.usernameError, err.message);
+      } else if (err.code === "GAME_NOT_FOUND" || err.code === "INVALID_CODE") {
+        setError(els.code, els.codeError, err.message);
+      }
       setLoading(els.joinBtn, false);
     }
   }

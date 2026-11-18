@@ -1,7 +1,8 @@
 package com.github.echodot69420.fakeartist;
 
+import com.github.echodot69420.fakeartist.errors.ApiException;
+import com.github.echodot69420.fakeartist.errors.ErrorCode;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,10 +30,10 @@ class GameService {
     synchronized Map<String, Object> connect(ConnectRequest request) {
         Game game = getGame(cleanCode(request.code()));
         String username = cleanUsername(request.username());
-        if (game.started || game.collectingTopics) throw new ApiException(HttpStatus.CONFLICT, "Game already started.");
-        if (game.players.size() >= 10) throw new ApiException(HttpStatus.CONFLICT, "Game is full.");
+        if (game.started || game.collectingTopics) throw new ApiException(ErrorCode.GAME_STARTED);
+        if (game.players.size() >= 10) throw new ApiException(ErrorCode.GAME_FULL);
         if (game.players.stream().anyMatch(player -> player.username().equalsIgnoreCase(username))) {
-            throw new ApiException(HttpStatus.CONFLICT, "That username is taken in this game.");
+            throw new ApiException(ErrorCode.USERNAME_TAKEN);
         }
         game.players.add(new GamePlayer(UUID.randomUUID().toString().replace("-", ""), username, false));
         lobbyHandler.getObject().broadcastPlayers(game.code);
@@ -57,7 +58,7 @@ class GameService {
                 break;
             }
         }
-        if (index < 0) throw new ApiException(HttpStatus.NOT_FOUND, "Player is not in this game.");
+        if (index < 0) throw new ApiException(ErrorCode.PLAYER_NOT_FOUND);
         boolean wasHost = game.players.get(index).is_host();
         game.players.remove(index);
         if (game.players.isEmpty()) {
@@ -70,7 +71,7 @@ class GameService {
 
     Game getGame(String code) {
         Game game = games.get(code);
-        if (game == null) throw new ApiException(HttpStatus.NOT_FOUND, "Game not found.");
+        if (game == null) throw new ApiException(ErrorCode.GAME_NOT_FOUND);
         return game;
     }
 
@@ -89,7 +90,7 @@ class GameService {
     String cleanCode(String value) {
         String code = value == null ? "" : value.trim().toUpperCase();
         if (!code.matches("[A-Z0-9]{4}")) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Game code must be 4 characters.");
+            throw new ApiException(ErrorCode.INVALID_CODE);
         }
         return code;
     }
@@ -102,14 +103,13 @@ class GameService {
             }
             if (!games.containsKey(code.toString())) return code.toString();
         }
-        throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "No game codes available right now.");
+        throw new ApiException(ErrorCode.NO_CODES_AVAILABLE);
     }
 
     private String cleanUsername(String value) {
         String username = value == null ? "" : value;
         if (!username.matches("[A-Za-z0-9]{1,16}")) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Username must be 1-16 alphanumeric characters.");
+            throw new ApiException(ErrorCode.INVALID_USERNAME);
         }
         return username;
     }
@@ -117,7 +117,7 @@ class GameService {
     private String cleanTheme(String value) {
         String theme = value == null ? "" : value.trim();
         if (theme.isEmpty() || theme.length() > 20) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Theme must be 1-20 characters.");
+            throw new ApiException(ErrorCode.INVALID_THEME);
         }
         return theme;
     }

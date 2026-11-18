@@ -2,6 +2,10 @@ package com.github.echodot69420.fakeartist;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.echodot69420.fakeartist.errors.ApiException;
+import com.github.echodot69420.fakeartist.errors.ErrorCode;
+import com.github.echodot69420.fakeartist.errors.WebSocketErrorHandler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -23,14 +27,17 @@ class LobbyHandler extends TextWebSocketHandler {
     private final ObjectMapper mapper;
     private final GameController controller;
     private final FeatureFlags featureFlags;
+    private final WebSocketErrorHandler errors;
     private final Map<String, Map<String, WebSocketSession>> connections = new ConcurrentHashMap<>();
     private final Map<String, Long> lastSeen = new ConcurrentHashMap<>();
     private final Map<String, Boolean> away = new ConcurrentHashMap<>();
 
-    LobbyHandler(ObjectMapper mapper, GameController controller, FeatureFlags featureFlags) {
+    LobbyHandler(ObjectMapper mapper, GameController controller, FeatureFlags featureFlags,
+                 WebSocketErrorHandler errors) {
         this.mapper = mapper;
         this.controller = controller;
         this.featureFlags = featureFlags;
+        this.errors = errors;
     }
 
     @Override
@@ -66,11 +73,16 @@ class LobbyHandler extends TextWebSocketHandler {
         JsonNode node;
         try {
             node = mapper.readTree(message.getPayload());
-        } catch (Exception exception) {
-            send(session, Map.of("type", "error", "detail", "expected JSON"));
+        } catch (JsonProcessingException exception) {
+            errors.send(session, ErrorCode.MALFORMED_REQUEST, ErrorCode.MALFORMED_REQUEST.defaultMessage());
             return;
         }
         String type = node.path("type").asText();
+        errors.run(session, type, () -> dispatch(session, code, playerId, key, type, node));
+    }
+
+    private void dispatch(WebSocketSession session, String code, String playerId, String key,
+                          String type, JsonNode node) {
         if ("ping".equals(type)) {
             away.put(key, false);
             send(session, Map.of("type", "pong", "at", System.currentTimeMillis() / 1000.0));
@@ -85,7 +97,7 @@ class LobbyHandler extends TextWebSocketHandler {
         } else if ("kick".equals(type)) {
             kickPlayer(code, playerId, session, node.path("player_id").asText());
         } else {
-            send(session, Map.of("type", "error", "detail", "unknown message type: " + type));
+            throw new ApiException(ErrorCode.UNKNOWN_MESSAGE_TYPE);
         }
     }
 
@@ -120,29 +132,25 @@ class LobbyHandler extends TextWebSocketHandler {
 
     private synchronized void kickPlayer(String code, String playerId, WebSocketSession session, String targetId) {
         if (!featureFlags.kickPlayer()) {
-            send(session, Map.of("type", "error", "detail", "Player kicking is disabled."));
-            return;
+            throw new ApiException(ErrorCode.FEATURE_DISABLED, "Player kicking is disabled.");
         }
         Game game = controller.getGameIfPresent(code);
         if (game == null) {
-            send(session, Map.of("type", "error", "detail", "Game not found."));
-            return;
+            throw new ApiException(ErrorCode.GAME_NOT_FOUND);
         }
         GamePlayer requester = game.players.stream()
                 .filter(player -> player.player_id().equals(playerId))
                 .findFirst()
                 .orElse(null);
         if (requester == null || !requester.is_host()) {
-            send(session, Map.of("type", "error", "detail", "Only the host can kick players."));
-            return;
+            throw new ApiException(ErrorCode.NOT_HOST, "Only the host can kick players.");
         }
         GamePlayer target = game.players.stream()
                 .filter(player -> player.player_id().equals(targetId))
                 .findFirst()
                 .orElse(null);
         if (target == null || target.is_host() || target.player_id().equals(playerId)) {
-            send(session, Map.of("type", "error", "detail", "Only a non-host player can be kicked."));
-            return;
+            throw new ApiException(ErrorCode.INVALID_KICK_TARGET);
         }
         if (connections.getOrDefault(code, Map.of()).containsKey(targetId)) {
             drop(code, targetId, "kicked by host");
@@ -156,20 +164,17 @@ class LobbyHandler extends TextWebSocketHandler {
     private synchronized void startGame(String code, String playerId, WebSocketSession session) {
         Game game = controller.getGameIfPresent(code);
         if (game == null) {
-            send(session, Map.of("type", "error", "detail", "Game not found."));
-            return;
+            throw new ApiException(ErrorCode.GAME_NOT_FOUND);
         }
         GamePlayer player = game.players.stream()
                 .filter(candidate -> candidate.player_id().equals(playerId))
                 .findFirst()
                 .orElse(null);
         if (player == null || !player.is_host()) {
-            send(session, Map.of("type", "error", "detail", "Only the host can start the game."));
-            return;
+            throw new ApiException(ErrorCode.NOT_HOST, "Only the host can start the game.");
         }
         if (game.players.size() < 3) {
-            send(session, Map.of("type", "error", "detail", "Need 3+ players to start the game."));
-            return;
+            throw new ApiException(ErrorCode.NOT_ENOUGH_PLAYERS);
         }
         if (!game.started) {
             if (!game.collectingTopics) {
@@ -183,21 +188,17 @@ class LobbyHandler extends TextWebSocketHandler {
     private synchronized void submitTopic(String code, String playerId, WebSocketSession session, String value) {
         Game game = controller.getGameIfPresent(code);
         if (game == null) {
-            send(session, Map.of("type", "error", "detail", "Game not found."));
-            return;
+            throw new ApiException(ErrorCode.GAME_NOT_FOUND);
         }
         if (!game.collectingTopics || game.started) {
-            send(session, Map.of("type", "error", "detail", "The topic selection window is closed."));
-            return;
+            throw new ApiException(ErrorCode.TOPIC_WINDOW_CLOSED);
         }
         if (game.players.stream().noneMatch(player -> player.player_id().equals(playerId))) {
-            send(session, Map.of("type", "error", "detail", "Player is not in this game."));
-            return;
+            throw new ApiException(ErrorCode.PLAYER_NOT_FOUND);
         }
         String topic = value == null ? "" : value.trim();
         if (topic.isEmpty() || topic.length() > 40) {
-            send(session, Map.of("type", "error", "detail", "Topic must be 1-40 characters."));
-            return;
+            throw new ApiException(ErrorCode.INVALID_TOPIC);
         }
         game.topics.put(playerId, topic);
         broadcastTopicProgress(code, game);

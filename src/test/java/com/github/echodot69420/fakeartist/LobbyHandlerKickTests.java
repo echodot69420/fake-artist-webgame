@@ -1,5 +1,6 @@
 package com.github.echodot69420.fakeartist;
 
+import com.github.echodot69420.fakeartist.errors.WebSocketErrorHandler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ class LobbyHandlerKickTests {
         assertThat(fixture.game().players).hasSize(2);
         assertThat(lastPayload(fixture.hostSession()).path("detail").asText())
                 .isEqualTo("Player kicking is disabled.");
+        assertThat(lastPayload(fixture.hostSession()).path("code").asText()).isEqualTo("FEATURE_DISABLED");
     }
 
     @Test
@@ -41,6 +43,7 @@ class LobbyHandlerKickTests {
         assertThat(fixture.game().players).hasSize(2);
         assertThat(lastPayload(fixture.guestSession()).path("detail").asText())
                 .isEqualTo("Only the host can kick players.");
+        assertThat(lastPayload(fixture.guestSession()).path("code").asText()).isEqualTo("NOT_HOST");
     }
 
     @Test
@@ -52,6 +55,7 @@ class LobbyHandlerKickTests {
         assertThat(fixture.game().players).hasSize(2);
         assertThat(lastPayload(fixture.hostSession()).path("detail").asText())
                 .isEqualTo("Only a non-host player can be kicked.");
+        assertThat(lastPayload(fixture.hostSession()).path("code").asText()).isEqualTo("INVALID_KICK_TARGET");
     }
 
     @Test
@@ -81,7 +85,7 @@ class LobbyHandlerKickTests {
 
         FeatureFlags flags = new FeatureFlags();
         flags.setKickPlayer(kickEnabled);
-        LobbyHandler handler = new LobbyHandler(mapper, controller, flags);
+        LobbyHandler handler = new LobbyHandler(mapper, controller, flags, new WebSocketErrorHandler(mapper));
         WebSocketSession hostSession = session(code, game.players.get(0).player_id());
         WebSocketSession guestSession = session(code, "guest-id");
         handler.afterConnectionEstablished(hostSession);

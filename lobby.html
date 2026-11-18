@@ -451,7 +451,7 @@
         <span id="sweep-status"></span>
       </p>
 
-      <div class="banner" id="banner" hidden></div>
+      <div class="banner" id="banner" role="alert" hidden></div>
 
       <div class="actions">
         <span class="tooltip-wrap" id="start-btn-wrap">
@@ -544,6 +544,7 @@
   let heartbeatTimer = null;
   let watchdogTimer = null;
   let intentionalClose = false;
+  let everOpened = false;
   let lastMessageAt = 0;
   let topicSubmitted = false;
   let topicPhase = false;
@@ -663,6 +664,7 @@
     if (!session) return;
 
     intentionalClose = false;
+    everOpened = false;
     setConn("connecting", "Connecting…");
 
     const scheme = location.protocol === "https:" ? "wss" : "ws";
@@ -673,6 +675,7 @@
     socket = new WebSocket(url);
 
     socket.addEventListener("open", () => {
+      everOpened = true;
       setConn("connected", "Connected");
       els.sweep.textContent = ` Next server check in ~${SERVER_CHECK_S}s.`;
       send({ type: "ping" });
@@ -704,12 +707,14 @@
         els.leave.textContent = msg.game_exists ? "Rejoin" : "Back to homepage";
         els.leave.dataset.mode = msg.game_exists ? "rejoin" : "home";
       } else if (msg.type === "error") {
-        if (topicSubmitted && topicPhase) {
+        if (msg.code === "INVALID_TOPIC") {
           topicSubmitted = false;
           els.topicInput.disabled = false;
           els.topicSubmit.disabled = false;
           els.topicStatus.textContent = msg.detail;
           els.topicInput.focus();
+        } else if (msg.code === "TOPIC_WINDOW_CLOSED") {
+          els.topicStatus.textContent = msg.detail;
         }
         showBanner(msg.detail);
       }
@@ -719,7 +724,9 @@
       stopTimers();
       if (intentionalClose) return;
       setConn("disconnected", "Disconnected");
-      showBanner("Lost connection to the server. You were removed from the lobby.");
+      showBanner(everOpened
+        ? "Lost connection to the server. You were removed from the lobby."
+        : "Couldn't connect to the server. Check your connection and try again.");
       els.leave.textContent = "Try to rejoin";
       els.leave.dataset.mode = "rejoin";
     });

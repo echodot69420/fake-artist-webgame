@@ -1,9 +1,10 @@
 package com.github.echodot69420.fakeartist;
 
+import com.github.echodot69420.fakeartist.errors.ApiException;
+import com.github.echodot69420.fakeartist.errors.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.HttpStatus;
 
 import java.util.Map;
 
@@ -59,8 +60,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.connect(new ConnectRequest("ALICE", (String) hosted.get("code"))))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("That username is taken in this game.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.CONFLICT);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.USERNAME_TAKEN);
     }
 
     @Test
@@ -102,8 +103,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.connect(new ConnectRequest("Player10", code)))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Game is full.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.CONFLICT);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.GAME_FULL);
     }
 
     @Test
@@ -111,8 +112,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.connect(new ConnectRequest("Alice", "ZZZZ")))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Game not found.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.GAME_NOT_FOUND);
     }
 
     @Test
@@ -123,8 +124,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.removePlayer(controller.getGame(code), "missing-player"))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Player is not in this game.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.PLAYER_NOT_FOUND);
     }
 
     @Test
@@ -133,8 +134,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.host(new HostRequest("Alice", "   ")))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Theme must be 1-20 characters.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.INVALID_THEME);
     }
 
     @Test
@@ -150,8 +151,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.host(new HostRequest("Alice", "123456789012345678901")))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Theme must be 1-20 characters.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.INVALID_THEME);
     }
 
     @Test
@@ -160,8 +161,8 @@ class GameControllerUnitTests {
         assertThatThrownBy(() -> controller.host(new HostRequest("", "Space")))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Username must be 1-16 alphanumeric characters.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.INVALID_USERNAME);
     }
     @Test
     void hostAcceptsOneCharacterUsername() {
@@ -179,8 +180,8 @@ class GameControllerUnitTests {
                 controller.host(new HostRequest("Alice!", "Space")))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Username must be 1-16 alphanumeric characters.")
-                .extracting(exception -> ((ApiException) exception).status)
-                .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                .extracting(exception -> ((ApiException) exception).code())
+                .isEqualTo(ErrorCode.INVALID_USERNAME);
     }
     @Test
 void hostRejectsUsernameWithLeadingWhitespace() {
@@ -188,8 +189,8 @@ void hostRejectsUsernameWithLeadingWhitespace() {
             controller.host(new HostRequest(" Alice", "Space")))
             .isInstanceOf(ApiException.class)
             .hasMessage("Username must be 1-16 alphanumeric characters.")
-            .extracting(exception -> ((ApiException) exception).status)
-            .isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+            .extracting(exception -> ((ApiException) exception).code())
+            .isEqualTo(ErrorCode.INVALID_USERNAME);
 }
 
 

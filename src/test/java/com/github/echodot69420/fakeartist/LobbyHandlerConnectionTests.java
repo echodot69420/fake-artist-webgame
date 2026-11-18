@@ -1,5 +1,6 @@
 package com.github.echodot69420.fakeartist;
 
+import com.github.echodot69420.fakeartist.errors.WebSocketErrorHandler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class LobbyHandlerConnectionTests {
 
     private LobbyHandler newHandler(GameController controller) {
         FeatureFlags flags = new FeatureFlags();
-        return new LobbyHandler(mapper, controller, flags);
+        return new LobbyHandler(mapper, controller, flags, new WebSocketErrorHandler(mapper));
     }
 
     private WebSocketSession session(String code, String playerId) {

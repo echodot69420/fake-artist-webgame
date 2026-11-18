@@ -1,5 +1,6 @@
 package com.github.echodot69420.fakeartist;
 
+import com.github.echodot69420.fakeartist.errors.WebSocketErrorHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ class LobbyHandlerFeatureFlagTests {
 
         GameController controller = mock(GameController.class);
         when(controller.getGameIfPresent("ABCD")).thenReturn(game);
-        LobbyHandler handler = new LobbyHandler(mapper, controller, flags);
+        LobbyHandler handler = new LobbyHandler(mapper, controller, flags, new WebSocketErrorHandler(mapper));
 
         WebSocketSession[] sessions = new WebSocketSession[3];
         for (int i = 0; i < sessions.length; i++) {

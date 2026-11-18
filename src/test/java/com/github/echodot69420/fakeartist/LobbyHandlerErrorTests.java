@@ -33,7 +33,7 @@ class LobbyHandlerErrorTests {
 
     // ---------- topic (1-40 after trim) ----------
 
-    @Test // L-T1
+    @Test // FR-09-02, FR-14
     void emptyTopicIsRejected() throws Exception {
         Fixture f = collectingTopics();
         send(f, f.host(), "{\"type\":\"topic\",\"value\":\"\"}");
@@ -41,7 +41,7 @@ class LobbyHandlerErrorTests {
         assertThat(f.game().topics).isEmpty();
     }
 
-    @Test // L-T2
+    @Test // FR-09-02, FR-14
     void whitespaceOnlyTopicIsRejected() throws Exception {
         Fixture f = collectingTopics();
         send(f, f.host(), "{\"type\":\"topic\",\"value\":\"   \"}");
@@ -49,7 +49,7 @@ class LobbyHandlerErrorTests {
         assertThat(f.game().topics).isEmpty();
     }
 
-    @Test // L-T3: lower bound
+    @Test // FR-09-02, FR-14: lower bound
     void oneCharacterTopicIsAccepted() throws Exception {
         Fixture f = collectingTopics();
         send(f, f.host(), topic("A"));
@@ -57,7 +57,7 @@ class LobbyHandlerErrorTests {
         assertNoError(f.host());
     }
 
-    @Test // L-T4: upper bound
+    @Test // FR-09-02, FR-14: upper bound
     void fortyCharacterTopicIsAccepted() throws Exception {
         Fixture f = collectingTopics();
         send(f, f.host(), topic("T".repeat(40)));
@@ -65,7 +65,7 @@ class LobbyHandlerErrorTests {
         assertNoError(f.host());
     }
 
-    @Test // L-T5: just over the upper bound
+    @Test // FR-09-02, FR-14: just over the upper bound
     void fortyOneCharacterTopicIsRejected() throws Exception {
         Fixture f = collectingTopics();
         send(f, f.host(), topic("T".repeat(41)));
@@ -73,7 +73,7 @@ class LobbyHandlerErrorTests {
         assertThat(f.game().topics).isEmpty();
     }
 
-    @Test // L-T6
+    @Test // FR-09-01, FR-14
     void topicBeforeStartIsRejected() throws Exception {
         Fixture f = fixture(3);
         send(f, f.host(), topic("Cat"));
@@ -82,7 +82,7 @@ class LobbyHandlerErrorTests {
 
     // ---------- start (3+ players, host only) ----------
 
-    @Test // L-S1: just under the minimum
+    @Test // FR-08-02, FR-14: just under the minimum
     void startWithTwoPlayersIsRejected() throws Exception {
         Fixture f = fixture(2);
         send(f, f.host(), "{\"type\":\"start\"}");
@@ -90,7 +90,7 @@ class LobbyHandlerErrorTests {
         assertThat(f.game().collectingTopics).isFalse();
     }
 
-    @Test // L-S2: minimum
+    @Test // FR-08-02, FR-08-03, FR-14: minimum
     void startWithThreePlayersIsAccepted() throws Exception {
         Fixture f = fixture(3);
         send(f, f.host(), "{\"type\":\"start\"}");
@@ -98,7 +98,7 @@ class LobbyHandlerErrorTests {
         assertNoError(f.host());
     }
 
-    @Test // L-S3
+    @Test // FR-08-01, FR-14
     void nonHostCannotStart() throws Exception {
         Fixture f = fixture(3);
         send(f, f.guest(), "{\"type\":\"start\"}");
@@ -108,23 +108,7 @@ class LobbyHandlerErrorTests {
 
     // ---------- kick ----------
 
-    @Test // L-K1 (FR-14)
-    void kickWhileDisabledIsRejected() throws Exception {
-        Fixture f = fixture(2, false);
-        send(f, f.host(), kick(f.guestId()));
-        assertError(f.host(), "FEATURE_DISABLED");
-        assertThat(f.game().players).hasSize(2);
-    }
-
-    @Test // L-K2 (FR-16-02)
-    void nonHostKickIsRejected() throws Exception {
-        Fixture f = fixture(3, true);
-        send(f, f.guest(), kick(f.game().players.get(2).player_id()));
-        assertError(f.guest(), "NOT_HOST");
-        assertThat(f.game().players).hasSize(3);
-    }
-
-    @Test // L-K3 (FR-16-03)
+    @Test // FR-16-03
     void hostKickingThemselfIsRejected() throws Exception {
         Fixture f = fixture(2, true);
         send(f, f.host(), kick(f.hostId()));
@@ -132,17 +116,9 @@ class LobbyHandlerErrorTests {
         assertThat(f.game().players).hasSize(2);
     }
 
-    @Test // L-K4 (FR-16-03)
-    void kickingUnknownPlayerIsRejected() throws Exception {
-        Fixture f = fixture(2, true);
-        send(f, f.host(), kick("nobody"));
-        assertError(f.host(), "INVALID_KICK_TARGET");
-        assertThat(f.game().players).hasSize(2);
-    }
-
     // ---------- protocol (NFR-07) ----------
 
-    @Test // L-P1
+    @Test // FR-14, NFR-07
     void malformedJsonIsRejectedAndSessionStaysOpen() throws Exception {
         Fixture f = fixture(2);
         send(f, f.host(), "not json");
@@ -150,21 +126,21 @@ class LobbyHandlerErrorTests {
         verify(f.host(), never()).close(any(CloseStatus.class));
     }
 
-    @Test // L-P2
+    @Test // FR-14, NFR-01
     void unknownTypeIsRejected() throws Exception {
         Fixture f = fixture(2);
         send(f, f.host(), "{\"type\":\"dance\"}");
         assertError(f.host(), "UNKNOWN_MESSAGE_TYPE");
     }
 
-    @Test // L-P3
+    @Test // FR-14, NFR-01
     void missingTypeIsRejected() throws Exception {
         Fixture f = fixture(2);
         send(f, f.host(), "{}");
         assertError(f.host(), "UNKNOWN_MESSAGE_TYPE");
     }
 
-    @Test // L-P4: the connection keeps working after an error
+    @Test // NFR-07: the connection keeps working after an error
     void connectionSurvivesAnError() throws Exception {
         Fixture f = fixture(2);
         send(f, f.host(), "{\"type\":\"dance\"}");

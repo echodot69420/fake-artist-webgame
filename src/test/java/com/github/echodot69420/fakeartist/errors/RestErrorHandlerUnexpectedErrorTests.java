@@ -33,7 +33,7 @@ class RestErrorHandlerUnexpectedErrorTests {
             .setControllerAdvice(new RestErrorHandler())
             .build();
 
-    // R-P5 (NFR-12): unexpected exceptions return 500 INTERNAL without leaking their message.
+    // NFR-12: unexpected exceptions return 500 INTERNAL without leaking their message.
     @Test
     void unexpectedExceptionReturnsInternalWithoutLeakingMessage() throws Exception {
         mvc.perform(get("/boom"))
@@ -43,7 +43,7 @@ class RestErrorHandlerUnexpectedErrorTests {
                 .andExpect(content().string(not(containsString("secret-internal-state"))));
     }
 
-    // R-L3 (NFR-12): real bugs are logged at ERROR with a stack trace.
+    // NFR-12: real bugs are logged at ERROR with a stack trace.
     @Test
     void unexpectedExceptionIsLoggedAtErrorWithStackTrace(CapturedOutput output) throws Exception {
         mvc.perform(get("/boom"));

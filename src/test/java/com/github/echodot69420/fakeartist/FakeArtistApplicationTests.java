@@ -27,16 +27,19 @@ class FakeArtistApplicationTests {
     @Autowired
     private FeatureFlags featureFlags;
 
+    // No requirement: the round-results feature flag is off by default.
     @Test
     void roundResultsFeatureIsDisabledByDefault() {
         assertThat(featureFlags.roundResults()).isFalse();
     }
 
+    // FR-16 (planned): the kick feature flag is off by default.
     @Test
     void kickPlayerFeatureIsDisabledByDefault() {
         assertThat(featureFlags.kickPlayer()).isFalse();
     }
 
+    // FR-15: /health reports status, service name, and counts.
     @Test
     void healthEndpointReturnsApplicationStatus() {
         ResponseEntity<Map> response = restTemplate.getForEntity(baseUrl("/health"), Map.class);
@@ -46,6 +49,7 @@ class FakeArtistApplicationTests {
         assertThat(response.getBody()).containsKeys("service", "games", "players");
     }
 
+    // FR-01-02, FR-01-05, FR-02-06, FR-02-07: host then join returns the shared game.
     @Test
     void hostAndConnectFlowCreatesPlayersForGame() {
         ResponseEntity<Map> hostResponse = post("/host", Map.of(
@@ -74,6 +78,7 @@ class FakeArtistApplicationTests {
         assertThat((List<?>) gameResponse.getBody().get("players")).hasSize(2);
     }
 
+    // FR-01-03, FR-01-05: a valid host request creates a lobby game.
     @Test
     void hostEndpointCreatesGameForValidInput() {
         ResponseEntity<Map> response = post("/host", Map.of(
@@ -93,6 +98,7 @@ class FakeArtistApplicationTests {
     }
 
     // Performance threshold: 20/20 valid `/host` requests must return HTTP 200 in under 500 ms each on the test environment.
+    // NFR-11 (partial): the host endpoint meets the response-time target.
     @Test
     void hostEndpointRespondsWithinPerformanceThreshold() {
         post("/host", Map.of(
@@ -113,29 +119,6 @@ class FakeArtistApplicationTests {
                     .as("request %d response time", i + 1)
                     .isLessThan(500_000_000L);
         }
-    }
-
-    @Test
-    void duplicateUsernameIsRejectedWhenJoiningGame() {
-        ResponseEntity<Map> hostResponse = post("/host", Map.of(
-                "username", "HostUser",
-                "theme", "Ocean"
-        ));
-        String code = (String) hostResponse.getBody().get("code");
-
-        ResponseEntity<Map> firstJoin = post("/connect", Map.of(
-                "username", "GuestUser",
-                "code", code
-        ));
-        assertThat(firstJoin.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        ResponseEntity<Map> duplicateJoin = post("/connect", Map.of(
-                "username", "GuestUser",
-                "code", code
-        ));
-
-        assertThat(duplicateJoin.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(duplicateJoin.getBody()).containsEntry("detail", "That username is taken in this game.");
     }
 
     private String baseUrl(String path) {

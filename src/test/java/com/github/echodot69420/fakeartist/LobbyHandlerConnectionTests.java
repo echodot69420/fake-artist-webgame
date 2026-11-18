@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 class LobbyHandlerConnectionTests {
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // FR-07-01, FR-07-02: a socket for a missing game is closed with a reason.
     @Test
     void unknownGameConnectionReceivesActionableBye() throws Exception {
         GameController controller = mock(GameController.class);
@@ -34,6 +35,7 @@ class LobbyHandlerConnectionTests {
         verify(session).close(new CloseStatus(4404, "game not found"));
     }
 
+    // FR-07-02, NFR-01: a socket for a non-member leaves the game unchanged.
     @Test
     void unknownPlayerConnectionDoesNotMutateGameState() throws Exception {
         Game game = new Game("ABCD", "Space", "Host");

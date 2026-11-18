@@ -38,7 +38,7 @@ class WebSocketErrorHandlerTests {
         when(session.isOpen()).thenReturn(true);
     }
 
-    // W-1 (FR-14): a successful action sends nothing.
+    // FR-14: a successful action sends nothing.
     @Test
     void successfulActionSendsNoErrorFrame() throws Exception {
         handler.run(session, "ping", () -> { });
@@ -46,7 +46,7 @@ class WebSocketErrorHandlerTests {
         verify(session, never()).sendMessage(any());
     }
 
-    // W-2 (FR-14): an ApiException becomes an error frame with its code and default message.
+    // FR-14: an ApiException becomes an error frame with its code and default message.
     @Test
     void apiExceptionBecomesErrorFrameWithDefaultMessage() throws Exception {
         handler.run(session, "start", () -> { throw new ApiException(ErrorCode.NOT_HOST); });
@@ -57,7 +57,7 @@ class WebSocketErrorHandlerTests {
         assertThat(frame.path("detail").asText()).isEqualTo(ErrorCode.NOT_HOST.defaultMessage());
     }
 
-    // W-3 (FR-14): a custom message overrides the default.
+    // FR-14: a custom message overrides the default.
     @Test
     void apiExceptionCustomMessageIsUsedAsDetail() throws Exception {
         handler.run(session, "kick", () -> { throw new ApiException(ErrorCode.NOT_HOST, "custom"); });
@@ -65,7 +65,7 @@ class WebSocketErrorHandlerTests {
         assertThat(onlyFrame().path("detail").asText()).isEqualTo("custom");
     }
 
-    // W-4 (NFR-12): unexpected errors become INTERNAL, are logged, and do not leak their message.
+    // NFR-12: unexpected errors become INTERNAL, are logged, and do not leak their message.
     @Test
     void unexpectedRuntimeExceptionBecomesInternalWithoutLeakingMessage(CapturedOutput output) throws Exception {
         handler.run(session, "topic", () -> { throw new IllegalStateException("secret-internal-state"); });
@@ -76,7 +76,7 @@ class WebSocketErrorHandlerTests {
         assertThat(output).contains("ERROR").contains("Unhandled WS error");
     }
 
-    // W-5 (NFR-07): checked exceptions are handled too and never escape run().
+    // NFR-07: checked exceptions are handled too and never escape run().
     @Test
     void checkedExceptionBecomesInternalAndDoesNotPropagate() throws Exception {
         assertThatCode(() -> handler.run(session, "topic", () -> { throw new IOException("disk"); }))
@@ -85,7 +85,7 @@ class WebSocketErrorHandlerTests {
         assertThat(onlyFrame().path("code").asText()).isEqualTo("INTERNAL");
     }
 
-    // W-6 (NFR-07): a closed session is skipped quietly.
+    // NFR-07: a closed session is skipped quietly.
     @Test
     void closedSessionIsNotSentTo() throws Exception {
         when(session.isOpen()).thenReturn(false);
@@ -94,7 +94,7 @@ class WebSocketErrorHandlerTests {
         verify(session, never()).sendMessage(any());
     }
 
-    // W-7 (NFR-07): a failed send is swallowed.
+    // NFR-07: a failed send is swallowed.
     @Test
     void sendFailureIsSwallowed() throws Exception {
         doThrow(new IOException("broken pipe")).when(session).sendMessage(any());
@@ -104,7 +104,7 @@ class WebSocketErrorHandlerTests {
                 .doesNotThrowAnyException();
     }
 
-    // W-8 (NFR-07): a recoverable error keeps the socket open.
+    // NFR-07: a recoverable error keeps the socket open.
     @Test
     void errorsNeverCloseTheSession() throws Exception {
         handler.run(session, "start", () -> { throw new ApiException(ErrorCode.NOT_HOST); });
@@ -114,7 +114,7 @@ class WebSocketErrorHandlerTests {
         verify(session, never()).close(any(CloseStatus.class));
     }
 
-    // W-9 (FR-14, NFR-14): every code is sent by its enum name.
+    // FR-14, NFR-14: every code is sent by its enum name.
     @ParameterizedTest
     @EnumSource(ErrorCode.class)
     void everyCodeIsSentByName(ErrorCode code) throws Exception {

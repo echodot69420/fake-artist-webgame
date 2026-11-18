@@ -35,111 +35,111 @@ class RestErrorHandlerTests {
 
     // ---------- username (1-16, [A-Za-z0-9]) via POST /host ----------
 
-    @Test // R-U1: length 0, rejected by @Valid
+    @Test // FR-01-01, FR-03, FR-14: length 0, rejected by @Valid
     void usernameLength0IsRejected() throws Exception {
         expectError(host("", "Space"), 422, "INVALID_USERNAME");
     }
 
-    @Test // R-U2: length 1, lower bound
+    @Test // FR-01-01, FR-03, FR-14: length 1, lower bound
     void usernameLength1IsAccepted() throws Exception {
         host("A", "Space").andExpect(status().isOk());
     }
 
-    @Test // R-U3: length 16, upper bound
+    @Test // FR-01-01, FR-03, FR-14: length 16, upper bound
     void usernameLength16IsAccepted() throws Exception {
         host("A".repeat(16), "Space").andExpect(status().isOk());
     }
 
-    @Test // R-U4: length 17, rejected by @Valid
+    @Test // FR-01-01, FR-03, FR-14: length 17, rejected by @Valid
     void usernameLength17IsRejected() throws Exception {
         expectError(host("A".repeat(17), "Space"), 422, "INVALID_USERNAME");
     }
 
-    @Test // R-U5: valid length, invalid character
+    @Test // FR-01-01, FR-03, FR-14: valid length, invalid character
     void usernameWithInvalidCharacterIsRejected() throws Exception {
         expectError(host("!", "Space"), 422, "INVALID_USERNAME");
     }
 
-    @Test // R-U6: missing field, rejected by the service
+    @Test // FR-01-01, FR-03, FR-14: missing field, rejected by the service
     void missingUsernameIsRejected() throws Exception {
         expectError(postJson("/host", body("theme", "Space")), 422, "INVALID_USERNAME");
     }
 
     // ---------- theme (1-20 after trim) via POST /host ----------
 
-    @Test // R-T1: length 0, rejected by @Valid
+    @Test // FR-01-01, FR-04, FR-14: length 0, rejected by @Valid
     void themeLength0IsRejected() throws Exception {
         expectError(host("Bob", ""), 422, "INVALID_THEME");
     }
 
-    @Test // R-T2: passes @Size, empty after trim, rejected by the service
+    @Test // FR-01-01, FR-04, FR-14: passes @Size, empty after trim, rejected by the service
     void whitespaceOnlyThemeIsRejected() throws Exception {
         expectError(host("Bob", "   "), 422, "INVALID_THEME");
     }
 
-    @Test // R-T3: length 1, lower bound
+    @Test // FR-01-01, FR-04, FR-14: length 1, lower bound
     void themeLength1IsAccepted() throws Exception {
         host("Bob", "A").andExpect(status().isOk());
     }
 
-    @Test // R-T4: length 20, upper bound
+    @Test // FR-01-01, FR-04, FR-14: length 20, upper bound
     void themeLength20IsAccepted() throws Exception {
         host("Bob", "T".repeat(20)).andExpect(status().isOk());
     }
 
-    @Test // R-T5: length 21, rejected by @Valid
+    @Test // FR-01-01, FR-04, FR-14: length 21, rejected by @Valid
     void themeLength21IsRejected() throws Exception {
         expectError(host("Bob", "T".repeat(21)), 422, "INVALID_THEME");
     }
 
     // ---------- game code (exactly 4, [A-Z0-9]) via POST /connect ----------
 
-    @Test // R-C1: length 3, passes @Size(1,4), rejected by the service
+    @Test // FR-02-01, FR-14: length 3, passes @Size(1,4), rejected by the service
     void codeLength3IsRejected() throws Exception {
         expectError(connect("Bob", "ABC"), 422, "INVALID_CODE");
     }
 
-    @Test // R-C2: length 4, existing game
+    @Test // FR-02-01, FR-14: length 4, existing game
     void codeLength4IsAccepted() throws Exception {
         connect("Bob", newGame()).andExpect(status().isOk());
     }
 
-    @Test // R-C3: length 5, rejected by @Valid
+    @Test // FR-02-01, FR-14: length 5, rejected by @Valid
     void codeLength5IsRejected() throws Exception {
         expectError(connect("Bob", "ABCDE"), 422, "INVALID_CODE");
     }
 
-    @Test // R-C4: lowercase is normalised
+    @Test // FR-02-01, FR-14: lowercase is normalised
     void lowercaseCodeIsAccepted() throws Exception {
         connect("Bob", newGame().toLowerCase()).andExpect(status().isOk());
     }
 
-    @Test // R-C5: valid format, no such game ('0' is never generated, so this code cannot exist)
+    @Test // FR-02-02, FR-14: valid format, no such game ('0' is never generated, so this code cannot exist)
     void unknownCodeIsNotFound() throws Exception {
         expectError(connect("Bob", "ZZZ0"), 404, "GAME_NOT_FOUND");
     }
 
     // ---------- game state via POST /connect ----------
 
-    @Test // R-S1: 10th player is the last one allowed
+    @Test // FR-02-04, FR-05, FR-14: 10th player is the last one allowed
     void tenthPlayerCanJoin() throws Exception {
         String code = gameWithPlayers(9);
         connect("Player10", code).andExpect(status().isOk());
     }
 
-    @Test // R-S2: 11th player is rejected
+    @Test // FR-02-04, FR-05, FR-14: 11th player is rejected
     void eleventhPlayerIsRejected() throws Exception {
         String code = gameWithPlayers(10);
         expectError(connect("Player11", code), 409, "GAME_FULL");
     }
 
-    @Test // R-S3
+    @Test // FR-02-05, FR-03, FR-14
     void duplicateUsernameIgnoringCaseIsRejected() throws Exception {
         String code = newGame();
         expectError(connect("HOST", code), 409, "USERNAME_TAKEN");
     }
 
-    @Test // R-S4
+    @Test // FR-02-03, FR-10-05, FR-14
     void joiningAStartedGameIsRejected() throws Exception {
         String code = newGame();
         games.getGame(code).collectingTopics = true;
@@ -148,25 +148,25 @@ class RestErrorHandlerTests {
 
     // ---------- protocol ----------
 
-    @Test // R-P1
+    @Test // FR-14, NFR-01
     void malformedJsonIsRejected() throws Exception {
         expectError(mvc.perform(post("/host").contentType(MediaType.APPLICATION_JSON).content("not json")),
                 400, "MALFORMED_REQUEST");
     }
 
-    @Test // R-P2
+    @Test // FR-14, NFR-01
     void emptyBodyIsRejected() throws Exception {
         expectError(mvc.perform(post("/host").contentType(MediaType.APPLICATION_JSON).content("")),
                 400, "MALFORMED_REQUEST");
     }
 
-    @Test // R-P3
+    @Test // FR-14, NFR-01
     void nonJsonContentTypeIsRejected() throws Exception {
         expectError(mvc.perform(post("/host").contentType(MediaType.TEXT_PLAIN).content("hello")),
                 400, "MALFORMED_REQUEST");
     }
 
-    @Test // R-P4 (NFR-12): missing static files are a quiet 404
+    @Test // NFR-12: missing static files are a quiet 404
     void missingStaticResourceIsQuiet404(CapturedOutput output) throws Exception {
         expectError(mvc.perform(get("/favicon.ico")), 404, "RESOURCE_NOT_FOUND");
         assertThat(output).doesNotContain("Unhandled error");
@@ -174,7 +174,7 @@ class RestErrorHandlerTests {
 
     // ---------- logging (NFR-12) ----------
 
-    @Test // R-L1: log names the field but never the submitted value
+    @Test // NFR-12: log names the field but never the submitted value
     void validationLogNamesFieldButNotValue(CapturedOutput output) throws Exception {
         host("Secretusername17", "Space").andExpect(status().isOk());
         String rejected = "Rejectedusername1"; // 17 characters
@@ -183,7 +183,7 @@ class RestErrorHandlerTests {
         assertThat(output).contains("field=username").doesNotContain(rejected);
     }
 
-    @Test // R-L2: expected errors are logged at INFO without a stack trace
+    @Test // NFR-12: expected errors are logged at INFO without a stack trace
     void expectedErrorIsLoggedWithoutStackTrace(CapturedOutput output) throws Exception {
         String code = gameWithPlayers(10);
         connect("Player11", code);

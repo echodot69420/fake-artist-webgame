@@ -11,6 +11,7 @@ class LobbyHandlerFeatureFlagConfigurationTests {
     @Autowired
     private FeatureFlags featureFlags;
 
+    // No requirement: a config override enables the round-results message.
     @Test
     void configurationOverrideEnablesRoundResultsMessage() throws Exception {
         assertThat(featureFlags.roundResults()).isTrue();

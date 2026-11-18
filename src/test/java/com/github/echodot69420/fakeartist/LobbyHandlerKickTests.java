@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 class LobbyHandlerKickTests {
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // FR-16 (planned): kicks are rejected while the flag is off.
     @Test
     void disabledKickFlagRejectsKickWithoutChangingGame() throws Exception {
         Fixture fixture = fixture(false);
@@ -34,6 +35,7 @@ class LobbyHandlerKickTests {
         assertThat(lastPayload(fixture.hostSession()).path("code").asText()).isEqualTo("FEATURE_DISABLED");
     }
 
+    // FR-16-02 (planned): a non-host cannot kick.
     @Test
     void nonHostCannotKickAnotherPlayer() throws Exception {
         Fixture fixture = fixture(true);
@@ -46,6 +48,7 @@ class LobbyHandlerKickTests {
         assertThat(lastPayload(fixture.guestSession()).path("code").asText()).isEqualTo("NOT_HOST");
     }
 
+    // FR-16-03 (planned): the host or an unknown player cannot be kicked.
     @Test
     void hostCannotKickUnknownOrHostTarget() throws Exception {
         Fixture fixture = fixture(true);
@@ -58,6 +61,7 @@ class LobbyHandlerKickTests {
         assertThat(lastPayload(fixture.hostSession()).path("code").asText()).isEqualTo("INVALID_KICK_TARGET");
     }
 
+    // FR-16-04, FR-16-05 (planned): a kick removes, disconnects, and broadcasts.
     @Test
     void enabledHostKickRemovesTargetAndNotifiesBothSessions() throws Exception {
         Fixture fixture = fixture(true);

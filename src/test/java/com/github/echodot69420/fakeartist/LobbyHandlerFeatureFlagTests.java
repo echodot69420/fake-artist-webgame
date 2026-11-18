@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class LobbyHandlerFeatureFlagTests {
+    // No requirement (touches FR-09-05, FR-10-03): no round-results message while the flag is off.
     @Test
     void disabledRoundResultsFlagDoesNotSendExperimentalMessage() throws Exception {
         FeatureFlags flags = new FeatureFlags();

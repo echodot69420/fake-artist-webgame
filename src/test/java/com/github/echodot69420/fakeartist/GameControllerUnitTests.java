@@ -27,6 +27,7 @@ class GameControllerUnitTests {
         controller = new GameController(provider);
     }
 
+    // FR-01-03, FR-01-04: hosting trims input and makes the requester host.
     @Test
     void hostCreatesGameWithTrimmedValuesAndHostPlayer() {
         Map<String, Object> response = controller.host(new HostRequest("Alice", "  Space  "));
@@ -41,6 +42,7 @@ class GameControllerUnitTests {
                 });
     }
 
+    // FR-02-01, FR-07-03: codes are case-normalised and joins are broadcast.
     @Test
     void connectAcceptsCaseInsensitiveCodeAndBroadcastsPlayers() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -53,17 +55,7 @@ class GameControllerUnitTests {
         verify(lobbyHandler).broadcastPlayers(code);
     }
 
-    @Test
-    void duplicateUsernameIsRejectedIgnoringCase() {
-        Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
-
-        assertThatThrownBy(() -> controller.connect(new ConnectRequest("ALICE", (String) hosted.get("code"))))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("That username is taken in this game.")
-                .extracting(exception -> ((ApiException) exception).code())
-                .isEqualTo(ErrorCode.USERNAME_TAKEN);
-    }
-
+    // FR-11-04: host status passes to the next player.
     @Test
     void removeHostTransfersHostRoleToNextPlayer() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -81,6 +73,7 @@ class GameControllerUnitTests {
                 });
     }
 
+    // FR-11-06: an empty game is deleted.
     @Test
     void removingLastPlayerDeletesGame() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -92,21 +85,7 @@ class GameControllerUnitTests {
         assertThat(controller.getGameIfPresent(code)).isNull();
     }
 
-    @Test
-    void connectRejectsAnEleventhPlayer() {
-        Map<String, Object> hosted = controller.host(new HostRequest("Host", "Space"));
-        String code = (String) hosted.get("code");
-        for (int i = 1; i < 10; i++) {
-            controller.connect(new ConnectRequest("Player" + i, code));
-        }
-
-        assertThatThrownBy(() -> controller.connect(new ConnectRequest("Player10", code)))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("Game is full.")
-                .extracting(exception -> ((ApiException) exception).code())
-                .isEqualTo(ErrorCode.GAME_FULL);
-    }
-
+    // FR-02-02: joining a missing game is rejected.
     @Test
     void connectRejectsUnknownGame() {
         assertThatThrownBy(() -> controller.connect(new ConnectRequest("Alice", "ZZZZ")))
@@ -116,6 +95,7 @@ class GameControllerUnitTests {
                 .isEqualTo(ErrorCode.GAME_NOT_FOUND);
     }
 
+    // No requirement: removing an unknown player is rejected.
     @Test
     void removePlayerRejectsUnknownPlayer() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -128,6 +108,7 @@ class GameControllerUnitTests {
                 .isEqualTo(ErrorCode.PLAYER_NOT_FOUND);
     }
 
+    // FR-01-01, FR-04: an empty theme is rejected.
     @Test
     void hostRejectsEmptyTheme() {
         // Equivalence Partitioning: empty themes are invalid; representative invalid partition.
@@ -138,51 +119,7 @@ class GameControllerUnitTests {
                 .isEqualTo(ErrorCode.INVALID_THEME);
     }
 
-    @Test
-    void hostAcceptsThemeAtMaximumLength() {
-        // Boundary Value Analysis: 20 characters is the largest valid theme.
-        assertThat(controller.host(new HostRequest("Alice", "12345678901234567890")))
-                .containsEntry("theme", "12345678901234567890");
-    }
-
-    @Test
-    void hostRejectsThemeAboveMaximumLength() {
-        // Boundary Value Analysis: 21 characters is the first invalid value above the limit.
-        assertThatThrownBy(() -> controller.host(new HostRequest("Alice", "123456789012345678901")))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("Theme must be 1-20 characters.")
-                .extracting(exception -> ((ApiException) exception).code())
-                .isEqualTo(ErrorCode.INVALID_THEME);
-    }
-
-    @Test
-    void hostRejectsUsernameShorterThanMinimum() {
-        // Boundary Value Analysis: one character is below the one-character username minimum.
-        assertThatThrownBy(() -> controller.host(new HostRequest("", "Space")))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("Username must be 1-16 alphanumeric characters.")
-                .extracting(exception -> ((ApiException) exception).code())
-                .isEqualTo(ErrorCode.INVALID_USERNAME);
-    }
-    @Test
-    void hostAcceptsOneCharacterUsername() {
-        Map<String, Object> response =
-            controller.host(new HostRequest("A", "Space"));
-
-        assertThat(controller.getGame((String) response.get("code")).players)
-                .singleElement()
-                .satisfies(player -> assertThat(player.username()).isEqualTo("A"));
-    }
-
-    @Test
-    void hostRejectsUsernameContainingPunctuation() {
-        assertThatThrownBy(() ->
-                controller.host(new HostRequest("Alice!", "Space")))
-                .isInstanceOf(ApiException.class)
-                .hasMessage("Username must be 1-16 alphanumeric characters.")
-                .extracting(exception -> ((ApiException) exception).code())
-                .isEqualTo(ErrorCode.INVALID_USERNAME);
-    }
+    // FR-01-01, FR-03: leading whitespace in a username is rejected.
     @Test
 void hostRejectsUsernameWithLeadingWhitespace() {
     assertThatThrownBy(() ->

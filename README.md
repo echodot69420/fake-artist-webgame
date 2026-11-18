@@ -8,15 +8,24 @@ who is faking it.
 
 **Prerequisites:** Java 17+ and Maven. Check with `java --version` and `mvn --version`.
 
-To run the automated checks for the game logic and API endpoints:
+To run the fast unit tests (`*Test` classes):
 
 ```bash
 mvn test
 ```
 
+To run everything, including the Spring-context integration tests (`*IT` classes):
+
+```bash
+mvn verify
+```
+
+Every test is tagged with the requirement(s) it verifies (`@Tag("FR-14")`), or `NON-REQ`
+when it maps to none. Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
+
 ## Continuous integration workflow
 
-GitHub Actions runs `mvn --batch-mode test` for every push on both Java 17 and
+GitHub Actions runs `mvn --batch-mode verify` for every push on both Java 17 and
 Java 21. Java 17 is the project baseline, while Java 21 checks compatibility
 with a newer LTS runtime. Keep changes small enough to review and verify
 independently: run the tests locally, make one focused commit, push it, and

@@ -1,5 +1,6 @@
 package com.github.echodot69420.fakeartist.errors;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -19,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** R-P5 and R-L3: the catch-all handler for real bugs. Traces to NFR-12. */
 @ExtendWith(OutputCaptureExtension.class)
-class RestErrorHandlerUnexpectedErrorTests {
+class RestErrorHandlerTest {
 
     @RestController
     static class BrokenController {
@@ -34,6 +35,7 @@ class RestErrorHandlerUnexpectedErrorTests {
             .build();
 
     // NFR-12: unexpected exceptions return 500 INTERNAL without leaking their message.
+    @Tag("NFR-12")
     @Test
     void unexpectedExceptionReturnsInternalWithoutLeakingMessage() throws Exception {
         mvc.perform(get("/boom"))
@@ -44,6 +46,7 @@ class RestErrorHandlerUnexpectedErrorTests {
     }
 
     // NFR-12: real bugs are logged at ERROR with a stack trace.
+    @Tag("NFR-12")
     @Test
     void unexpectedExceptionIsLoggedAtErrorWithStackTrace(CapturedOutput output) throws Exception {
         mvc.perform(get("/boom"));

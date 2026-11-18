@@ -3,6 +3,7 @@ package com.github.echodot69420.fakeartist;
 import com.github.echodot69420.fakeartist.errors.ApiException;
 import com.github.echodot69420.fakeartist.errors.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 
@@ -14,7 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class GameControllerUnitTests {
+class GameControllerTest {
     private GameController controller;
     private LobbyHandler lobbyHandler;
 
@@ -28,6 +29,9 @@ class GameControllerUnitTests {
     }
 
     // FR-01-03, FR-01-04: hosting trims input and makes the requester host.
+    @Tag("FR-01")
+    @Tag("FR-01-03")
+    @Tag("FR-01-04")
     @Test
     void hostCreatesGameWithTrimmedValuesAndHostPlayer() {
         Map<String, Object> response = controller.host(new HostRequest("Alice", "  Space  "));
@@ -43,6 +47,10 @@ class GameControllerUnitTests {
     }
 
     // FR-02-01, FR-07-03: codes are case-normalised and joins are broadcast.
+    @Tag("FR-02")
+    @Tag("FR-02-01")
+    @Tag("FR-07")
+    @Tag("FR-07-03")
     @Test
     void connectAcceptsCaseInsensitiveCodeAndBroadcastsPlayers() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -56,6 +64,8 @@ class GameControllerUnitTests {
     }
 
     // FR-11-04: host status passes to the next player.
+    @Tag("FR-11")
+    @Tag("FR-11-04")
     @Test
     void removeHostTransfersHostRoleToNextPlayer() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -74,6 +84,8 @@ class GameControllerUnitTests {
     }
 
     // FR-11-06: an empty game is deleted.
+    @Tag("FR-11")
+    @Tag("FR-11-06")
     @Test
     void removingLastPlayerDeletesGame() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -86,6 +98,8 @@ class GameControllerUnitTests {
     }
 
     // FR-02-02: joining a missing game is rejected.
+    @Tag("FR-02")
+    @Tag("FR-02-02")
     @Test
     void connectRejectsUnknownGame() {
         assertThatThrownBy(() -> controller.connect(new ConnectRequest("Alice", "ZZZZ")))
@@ -96,6 +110,7 @@ class GameControllerUnitTests {
     }
 
     // No requirement: removing an unknown player is rejected.
+    @Tag("NON-REQ")
     @Test
     void removePlayerRejectsUnknownPlayer() {
         Map<String, Object> hosted = controller.host(new HostRequest("Alice", "Space"));
@@ -109,6 +124,9 @@ class GameControllerUnitTests {
     }
 
     // FR-01-01, FR-04: an empty theme is rejected.
+    @Tag("FR-01")
+    @Tag("FR-01-01")
+    @Tag("FR-04")
     @Test
     void hostRejectsEmptyTheme() {
         // Equivalence Partitioning: empty themes are invalid; representative invalid partition.
@@ -120,6 +138,9 @@ class GameControllerUnitTests {
     }
 
     // FR-01-01, FR-03: leading whitespace in a username is rejected.
+    @Tag("FR-01")
+    @Tag("FR-01-01")
+    @Tag("FR-03")
     @Test
 void hostRejectsUsernameWithLeadingWhitespace() {
     assertThatThrownBy(() ->

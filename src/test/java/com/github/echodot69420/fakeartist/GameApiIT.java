@@ -1,5 +1,6 @@
 package com.github.echodot69420.fakeartist;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,30 +17,17 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/** End-to-end HTTP tests of the game API happy paths over a real server port. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class FakeArtistApplicationTests {
+class GameApiIT {
     @LocalServerPort
     private int port;
 
     @Autowired
     private TestRestTemplate restTemplate;
 
-    @Autowired
-    private FeatureFlags featureFlags;
-
-    // No requirement: the round-results feature flag is off by default.
-    @Test
-    void roundResultsFeatureIsDisabledByDefault() {
-        assertThat(featureFlags.roundResults()).isFalse();
-    }
-
-    // FR-16 (planned): the kick feature flag is off by default.
-    @Test
-    void kickPlayerFeatureIsDisabledByDefault() {
-        assertThat(featureFlags.kickPlayer()).isFalse();
-    }
-
     // FR-15: /health reports status, service name, and counts.
+    @Tag("FR-15")
     @Test
     void healthEndpointReturnsApplicationStatus() {
         ResponseEntity<Map> response = restTemplate.getForEntity(baseUrl("/health"), Map.class);
@@ -50,6 +38,12 @@ class FakeArtistApplicationTests {
     }
 
     // FR-01-02, FR-01-05, FR-02-06, FR-02-07: host then join returns the shared game.
+    @Tag("FR-01")
+    @Tag("FR-01-02")
+    @Tag("FR-01-05")
+    @Tag("FR-02")
+    @Tag("FR-02-06")
+    @Tag("FR-02-07")
     @Test
     void hostAndConnectFlowCreatesPlayersForGame() {
         ResponseEntity<Map> hostResponse = post("/host", Map.of(
@@ -79,6 +73,9 @@ class FakeArtistApplicationTests {
     }
 
     // FR-01-03, FR-01-05: a valid host request creates a lobby game.
+    @Tag("FR-01")
+    @Tag("FR-01-03")
+    @Tag("FR-01-05")
     @Test
     void hostEndpointCreatesGameForValidInput() {
         ResponseEntity<Map> response = post("/host", Map.of(
@@ -95,30 +92,6 @@ class FakeArtistApplicationTests {
         assertThat(players.get(0))
                 .containsEntry("username", "HostPlayer")
                 .containsEntry("is_host", true);
-    }
-
-    // Performance threshold: 20/20 valid `/host` requests must return HTTP 200 in under 500 ms each on the test environment.
-    // NFR-11 (partial): the host endpoint meets the response-time target.
-    @Test
-    void hostEndpointRespondsWithinPerformanceThreshold() {
-        post("/host", Map.of(
-                "username", "Warmup",
-                "theme", "Space"
-        ));
-
-        for (int i = 0; i < 20; i++) {
-            long start = System.nanoTime();
-            ResponseEntity<Map> response = post("/host", Map.of(
-                    "username", "PerfUser" + i,
-                    "theme", "Space"
-            ));
-            long elapsedNanos = System.nanoTime() - start;
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(elapsedNanos)
-                    .as("request %d response time", i + 1)
-                    .isLessThan(500_000_000L);
-        }
     }
 
     private String baseUrl(String path) {

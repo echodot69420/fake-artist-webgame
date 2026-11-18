@@ -3,12 +3,11 @@ package com.github.echodot69420.fakeartist;
 import com.github.echodot69420.fakeartist.errors.WebSocketErrorHandler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-
-import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,15 +15,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class LobbyHandlerConnectionTests {
+/** Opening a lobby WebSocket: the server rejects unknown games and non-member players. */
+class LobbyHandlerConnectionTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     // FR-07-01, FR-07-02: a socket for a missing game is closed with a reason.
+    @Tag("FR-07")
+    @Tag("FR-07-01")
+    @Tag("FR-07-02")
     @Test
     void unknownGameConnectionReceivesActionableBye() throws Exception {
         GameController controller = mock(GameController.class);
         when(controller.getGameIfPresent("ABCD")).thenReturn(null);
-        WebSocketSession session = session("ABCD", "player-1");
+        WebSocketSession session = LobbyFixture.session("ABCD", "player-1");
 
         newHandler(controller).afterConnectionEstablished(session);
 
@@ -36,13 +39,16 @@ class LobbyHandlerConnectionTests {
     }
 
     // FR-07-02, NFR-01: a socket for a non-member leaves the game unchanged.
+    @Tag("FR-07")
+    @Tag("FR-07-02")
+    @Tag("NFR-01")
     @Test
     void unknownPlayerConnectionDoesNotMutateGameState() throws Exception {
         Game game = new Game("ABCD", "Space", "Host");
         int playerCountBeforeConnection = game.players.size();
         GameController controller = mock(GameController.class);
         when(controller.getGameIfPresent("ABCD")).thenReturn(game);
-        WebSocketSession session = session("ABCD", "missing-player");
+        WebSocketSession session = LobbyFixture.session("ABCD", "missing-player");
 
         newHandler(controller).afterConnectionEstablished(session);
 
@@ -59,14 +65,6 @@ class LobbyHandlerConnectionTests {
     private LobbyHandler newHandler(GameController controller) {
         FeatureFlags flags = new FeatureFlags();
         return new LobbyHandler(mapper, controller, flags, new WebSocketErrorHandler(mapper));
-    }
-
-    private WebSocketSession session(String code, String playerId) {
-        WebSocketSession session = mock(WebSocketSession.class);
-        when(session.getUri()).thenReturn(URI.create(
-                "ws://localhost/ws/lobby?code=" + code + "&player_id=" + playerId));
-        when(session.isOpen()).thenReturn(true);
-        return session;
     }
 
     private JsonNode sentPayload(WebSocketSession session) throws Exception {

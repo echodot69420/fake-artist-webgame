@@ -23,6 +23,11 @@ mvn verify
 Every test is tagged with the requirement(s) it verifies (`@Tag("FR-14")`), or `NON-REQ`
 when it maps to none. Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
 
+`HomePageIT` and `LobbyPageIT` drive the real pages in headless Chromium using
+[Playwright](https://playwright.dev/java/). The first run downloads the browser (about 150 MB).
+Skip them with `mvn verify -DexcludedGroups=browser`, and skip the timing test with
+`-DexcludedGroups=performance`.
+
 ## Continuous integration workflow
 
 GitHub Actions runs `mvn --batch-mode verify` for every push on both Java 17 and

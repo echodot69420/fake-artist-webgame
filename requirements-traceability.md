@@ -27,7 +27,7 @@ Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
 | FR-03 | Username validity & uniqueness | `GameApiErrorIT.usernameLength0IsRejected`, `GameApiErrorIT.usernameLength1IsAccepted`, `GameApiErrorIT.usernameLength16IsAccepted`, `GameApiErrorIT.usernameLength17IsRejected`, `GameApiErrorIT.usernameWithInvalidCharacterIsRejected`, `GameApiErrorIT.missingUsernameIsRejected`, `GameApiErrorIT.duplicateUsernameIgnoringCaseIsRejected`, `GameControllerTest.hostRejectsUsernameWithLeadingWhitespace` | Covered |
 | FR-04 | Theme validity | `GameApiErrorIT.themeLength0IsRejected`, `GameApiErrorIT.whitespaceOnlyThemeIsRejected`, `GameApiErrorIT.themeLength1IsAccepted`, `GameApiErrorIT.themeLength20IsAccepted`, `GameApiErrorIT.themeLength21IsRejected`, `GameControllerTest.hostRejectsEmptyTheme` | Covered |
 | FR-05 | 10-player limit | `GameApiErrorIT.tenthPlayerCanJoin`, `GameApiErrorIT.eleventhPlayerIsRejected` | Covered |
-| FR-06 | Lobby displays state | — | **No automated test** (UI) |
+| FR-06 | Lobby displays state | `LobbyPageIT.lobbyShowsCodeThemePlayersAndHost` | Covered (browser) |
 | FR-07 | Real-time lobby updates | (via children) | Partial |
 | FR-07-01 | One WS per player, code + id required | `LobbyHandlerConnectionTest.unknownGameConnectionReceivesActionableBye` | Partial |
 | FR-07-02 | Validate WS game/player | `LobbyHandlerConnectionTest.unknownGameConnectionReceivesActionableBye`, `LobbyHandlerConnectionTest.unknownPlayerConnectionDoesNotMutateGameState` | Covered |
@@ -62,8 +62,8 @@ Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
 | FR-11-07 | Broadcast post-departure state | — | **No test** |
 | FR-12 | WS liveness limits | (via children) | **No test** |
 | FR-12-01 – FR-12-05 | Heartbeat, last-seen, away, 15 s / 120 s timeouts | — | **No test** |
-| FR-13 | Copy game code | — | **No automated test** (UI) |
-| FR-14 | Actionable error feedback | `GameApiErrorIT.codeLength3IsRejected`, `GameApiErrorIT.codeLength4IsAccepted`, `GameApiErrorIT.codeLength5IsRejected`, `GameApiErrorIT.lowercaseCodeIsAccepted`, `GameApiErrorIT.unknownCodeIsNotFound`, `GameApiErrorIT.tenthPlayerCanJoin`, `GameApiErrorIT.eleventhPlayerIsRejected`, `GameApiErrorIT.duplicateUsernameIgnoringCaseIsRejected`, `GameApiErrorIT.joiningAStartedGameIsRejected`, `GameApiErrorIT.usernameLength0IsRejected`, `GameApiErrorIT.usernameLength1IsAccepted`, `GameApiErrorIT.usernameLength16IsAccepted`, `GameApiErrorIT.usernameLength17IsRejected`, `GameApiErrorIT.usernameWithInvalidCharacterIsRejected`, `GameApiErrorIT.missingUsernameIsRejected`, `GameApiErrorIT.themeLength0IsRejected`, `GameApiErrorIT.whitespaceOnlyThemeIsRejected`, `GameApiErrorIT.themeLength1IsAccepted`, `GameApiErrorIT.themeLength20IsAccepted`, `GameApiErrorIT.themeLength21IsRejected`, `GameApiErrorIT.malformedJsonIsRejected`, `GameApiErrorIT.emptyBodyIsRejected`, `GameApiErrorIT.nonJsonContentTypeIsRejected`, `LobbyHandlerStartTest.startWithTwoPlayersIsRejected`, `LobbyHandlerStartTest.startWithThreePlayersIsAccepted`, `LobbyHandlerStartTest.nonHostCannotStart`, `LobbyHandlerTopicTest.emptyTopicIsRejected`, `LobbyHandlerTopicTest.whitespaceOnlyTopicIsRejected`, `LobbyHandlerTopicTest.oneCharacterTopicIsAccepted`, `LobbyHandlerTopicTest.fortyCharacterTopicIsAccepted`, `LobbyHandlerTopicTest.fortyOneCharacterTopicIsRejected`, `LobbyHandlerTopicTest.topicBeforeStartIsRejected`, `LobbyHandlerProtocolTest.malformedJsonIsRejectedAndSessionStaysOpen`, `LobbyHandlerProtocolTest.unknownTypeIsRejected`, `LobbyHandlerProtocolTest.missingTypeIsRejected`, `WebSocketErrorHandlerTest.successfulActionSendsNoErrorFrame`, `WebSocketErrorHandlerTest.apiExceptionBecomesErrorFrameWithDefaultMessage`, `WebSocketErrorHandlerTest.apiExceptionCustomMessageIsUsedAsDetail`, `WebSocketErrorHandlerTest.everyCodeIsSentByName`, `ErrorCodeTest.everyCodeHasANonBlankDefaultMessage`; connection failure manual | Covered |
+| FR-13 | Copy game code | `LobbyPageIT.copyButtonCopiesCodeAndConfirms` | Covered (browser) |
+| FR-14 | Actionable error feedback | `GameApiErrorIT.codeLength3IsRejected`, `GameApiErrorIT.codeLength4IsAccepted`, `GameApiErrorIT.codeLength5IsRejected`, `GameApiErrorIT.lowercaseCodeIsAccepted`, `GameApiErrorIT.unknownCodeIsNotFound`, `GameApiErrorIT.tenthPlayerCanJoin`, `GameApiErrorIT.eleventhPlayerIsRejected`, `GameApiErrorIT.duplicateUsernameIgnoringCaseIsRejected`, `GameApiErrorIT.joiningAStartedGameIsRejected`, `GameApiErrorIT.usernameLength0IsRejected`, `GameApiErrorIT.usernameLength1IsAccepted`, `GameApiErrorIT.usernameLength16IsAccepted`, `GameApiErrorIT.usernameLength17IsRejected`, `GameApiErrorIT.usernameWithInvalidCharacterIsRejected`, `GameApiErrorIT.missingUsernameIsRejected`, `GameApiErrorIT.themeLength0IsRejected`, `GameApiErrorIT.whitespaceOnlyThemeIsRejected`, `GameApiErrorIT.themeLength1IsAccepted`, `GameApiErrorIT.themeLength20IsAccepted`, `GameApiErrorIT.themeLength21IsRejected`, `GameApiErrorIT.malformedJsonIsRejected`, `GameApiErrorIT.emptyBodyIsRejected`, `GameApiErrorIT.nonJsonContentTypeIsRejected`, `LobbyHandlerStartTest.startWithTwoPlayersIsRejected`, `LobbyHandlerStartTest.startWithThreePlayersIsAccepted`, `LobbyHandlerStartTest.nonHostCannotStart`, `LobbyHandlerTopicTest.emptyTopicIsRejected`, `LobbyHandlerTopicTest.whitespaceOnlyTopicIsRejected`, `LobbyHandlerTopicTest.oneCharacterTopicIsAccepted`, `LobbyHandlerTopicTest.fortyCharacterTopicIsAccepted`, `LobbyHandlerTopicTest.fortyOneCharacterTopicIsRejected`, `LobbyHandlerTopicTest.topicBeforeStartIsRejected`, `LobbyHandlerProtocolTest.malformedJsonIsRejectedAndSessionStaysOpen`, `LobbyHandlerProtocolTest.unknownTypeIsRejected`, `LobbyHandlerProtocolTest.missingTypeIsRejected`, `WebSocketErrorHandlerTest.successfulActionSendsNoErrorFrame`, `WebSocketErrorHandlerTest.apiExceptionBecomesErrorFrameWithDefaultMessage`, `WebSocketErrorHandlerTest.apiExceptionCustomMessageIsUsedAsDetail`, `WebSocketErrorHandlerTest.everyCodeIsSentByName`, `ErrorCodeTest.everyCodeHasANonBlankDefaultMessage`; `HomePageIT` (all error tests) and `LobbyPageIT.webSocketErrorShowsBanner` check the messages are shown in the UI; `HomePageIT.unreachableServerShowsConnectionMessage` covers REST connection failure | Covered |
 | FR-15 | `/health` and `/models` | `GameApiIT.healthEndpointReturnsApplicationStatus` | Partial – `/models` not tested |
 
 ## Non-functional requirements
@@ -156,6 +156,20 @@ Run one requirement's tests with `mvn verify -Dgroups=FR-14`.
 | `WebSocketErrorHandlerTest.sendFailureIsSwallowed` | NFR-07 |
 | `WebSocketErrorHandlerTest.errorsNeverCloseTheSession` | NFR-07 |
 | `WebSocketErrorHandlerTest.everyCodeIsSentByName` | FR-14, NFR-14 |
+| `HomePageIT.takenUsernameShowsErrorUnderUsername` | FR-02-05, FR-03, FR-14 |
+| `HomePageIT.unknownGameShowsErrorUnderCode` | FR-02-02, FR-14 |
+| `HomePageIT.fullGameShowsServerMessage` | FR-02-04, FR-05, FR-14 |
+| `HomePageIT.startedGameShowsServerMessage` | FR-02-03, FR-14 |
+| `HomePageIT.serverThemeErrorShowsUnderTheme` | FR-14 (stubbed response) |
+| `HomePageIT.unreachableServerShowsConnectionMessage` | FR-14 (stubbed network failure) |
+| `HomePageIT.malformedErrorBodyShowsFallbackMessage` | FR-14, NFR-04 (stubbed response) |
+| `HomePageIT.shortCodeIsRejectedWithoutRequest` | FR-02-01 |
+| `HomePageIT.codeInputIsUppercasedAndFiltered` | FR-02-01 |
+| `HomePageIT.hostingOpensLobbyForNewGame` | FR-01-05 |
+| `LobbyPageIT.lobbyShowsCodeThemePlayersAndHost` | FR-06 |
+| `LobbyPageIT.secondPlayerAppearsWithoutReload` | FR-07-03 |
+| `LobbyPageIT.copyButtonCopiesCodeAndConfirms` | FR-13 |
+| `LobbyPageIT.webSocketErrorShowsBanner` | FR-08-01, FR-14 |
 
 ## Tests not traced to a completed requirement
 

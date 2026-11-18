@@ -27,5 +27,13 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: maven
 
+      # Browser tests (*PageIT) drive headless Chromium through Playwright.
+      - name: Install Playwright Chromium
+        run: >-
+          mvn --batch-mode --quiet test-compile exec:java
+          -Dexec.mainClass=com.microsoft.playwright.CLI
+          -Dexec.classpathScope=test
+          -Dexec.args="install --with-deps chromium"
+
       - name: Run tests
         run: mvn --batch-mode verify
